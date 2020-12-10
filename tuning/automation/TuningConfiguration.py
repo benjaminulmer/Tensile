@@ -176,7 +176,7 @@ class TuningConfiguration(object):
 
     def writeLibraryLogic(self,filename):
 
-  # work around to output data in order
+        # work around to output data in order
         dataGlobal = {}
         dataBenchmark = {}
         dataLibraryLogic = {}
