@@ -21,47 +21,61 @@
 
 import math
 
+# Problem definition
+M = 1000
+N = 1000
+K = 500
+dataType = "s"
+BPE = 4 # bytes per element (from dataType)
+
+# Hardware properties
 numCUs = 120
 ldsSize = 65536
 l2Eff = 70
-dataType = "s"
+
 threadsPerCU = 256
 numChannels = 32
 readBW = 64
 
-# TODO where do these come from? Depends on hardware? Value for "d"? Is brain float supported by Tensile?
-aluRate = 256 #if dataType == "s" 256 elif dataType == "h" 1024 elif dataType == "d" 128 else 512
+aluRate = 256 # arithmetic-logic-unit rate: ops / CU / cycle # TODO set from data type and hardware
 l2BandwidthPerCU = (readBW * numChannels) // numCUs
-# TODO where does 128 come from? What does CSU stand for?
-csuGran = 128 / numCUs
-# TODO what is this?
-BPE = 4 # stuff for other data types
 
+# Thresholds and tolerances 
 tile0GranThresh = 1.0
 tile1GranThresh = 1.0
 compMemBoundThresh = 1.0
+gsuGran = 128 / numCUs # TODO where does 128 come from? Is this GlobalSplitU granularity?
 
-# TODO pull this from Common.py
+# Options for splitting problem into workgroups
+# TODO pull this from Common.py?
 macroTileSizes = [32, 64, 80, 128, 160, 192, 224, 256] #[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768]
 macroTileSizes.sort()
 
 # TODO what's a good set of values for this?
-globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64]
+globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64, 128, 256]
+
+# TODO what's a good set of values for this?
+depthUValues = [4, 8, 16, 32, 64, 128, 256]
 
 ##################################
 # Values calculated in spreadsheet
 ##################################
-M = 1024
-N = 2048
-K = 1600
-
 tileSizes = macroTileSizes
 
-# N45 matrix calculation formula
-def compMemBoundFactor(mm0, mm1) :
-    magic = 1 # TODO in spreadsheet this is an empty cell (0): is this correct? (I think no)
-    return ( (l2Eff / 100) * l2BandwidthPerCU ) / ( (mm0 * K * BPE + mm1 * K * BPE + mm0 * mm1 * magic) / (mm0 * mm1 * K * 2 / aluRate) )
+# N45 matrix calculation formulas
+def bytesPerCU(mm0, mm1, k) :
+    # bytes from A + bytes from B + bytes from C
+    return (mm0 * k * BPE + mm1 * k * BPE + mm0 * mm1 * BPE)
 
+def cyclesPerCU(mm0, mm1, k) :
+    return (mm0 * mm1 * k * 2) / aluRate
+
+def roofLine(mm0, mm1, k) :
+    return bytesPerCU(mm0, mm1, k) / cyclesPerCU(mm0, mm1, k)
+
+# bytes we can deliver / bytes we need
+def compMemBoundFactor(mm0, mm1, k) :
+    return ( (l2Eff / 100) * l2BandwidthPerCU ) / roofLine(mm0, mm1, k)
 ##################################
 
 # C37 and D37
@@ -91,22 +105,36 @@ for i in range(0, len(nTiles)) :
     nTilesXtile1Grans.append(nTiles[i] if tile1Grans[i] == 1.0 else 0)
 
 # C55
-goodMacroTiles = []
-for i in range(0, len(tileSizes)):
-    for j in range(0, len(tileSizes)):
+goodMTandGSU = []
+totals = []
+for gsu in globalSplitUValues :
+    for mm0, numMTiles in zip(tileSizes, mTiles) :
+        for mm1, numNTiles in zip(tileSizes, nTiles):
 
-        mm0 = tileSizes[i]
-        mm1 = tileSizes[j]
-        numMTiles = mTiles[i]
-        numNTiles = nTiles[j]
+            numTiles = math.ceil(numMTiles * numNTiles * gsu)
+            compMemFact = compMemBoundFactor(mm0, mm1, math.ceil(K / gsu))
 
-        numTiles = math.ceil(numMTiles * numNTiles)
-        compMemFact = compMemBoundFactor(mm0, mm1)
+            if (numCUs / numTiles) * compMemFact >= compMemBoundThresh and (numTiles / numCUs) >= 1 :
+                goodMTandGSU.append((mm0, mm1, gsu))
+                totals.append(numMTiles * numNTiles * gsu)
 
-        if (numCUs / numTiles) * compMemFact >= compMemBoundThresh and (numTiles / numCUs) >= 1 :
-            goodMacroTiles.append((mm0, mm1))
+goodAll = []
+for (mm0, mm1, gsu) in goodMTandGSU :
+    for depthU in depthUValues :
+        ldsUsed = mm0 * depthU * BPE + mm1 * depthU * BPE
+        ldsLoad = ldsUsed / ldsSize
 
+        if ldsLoad <= 1 and ldsLoad > 0.7 :
+            goodAll.append((mm0, mm1, gsu, depthU))
+        
+print(goodAll)
 
+# print(goodMTandGSU)
+# print("*******************************")
+# print(totals)
+
+# print(min(totals))
+# print(max(totals))
 
 # print(tile0Grans)
 # print("*************************")
