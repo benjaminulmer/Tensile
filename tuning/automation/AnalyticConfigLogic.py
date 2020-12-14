@@ -21,32 +21,48 @@
 
 import math
 
-# Problem definition
-M = 1000
-N = 1000
-K = 500
-dataType = "s"
-BPE = 4 # bytes per element (from dataType)
+class ProblemDefinition :
 
-# Hardware properties
-numCUs = 120
-ldsSize = 65536
-l2Eff = 70
+    def __init__(self, M, N, K, dType) :
+        self.M = M
+        self.N = N
+        self.K = K
+        if dType == "d" :
+            self.BPE = 8
+        elif dType == "s" :
+            self.BPE = 4
+        else : # dType == "h"
+            self.BPE = 2
 
-threadsPerCU = 256
-numChannels = 32
-readBW = 64
 
-aluRate = 256 # arithmetic-logic-unit rate: ops / CU / cycle # TODO set from data type and hardware
-l2BandwidthPerCU = (readBW * numChannels) // numCUs
+class HardwareProperties :
 
-# Thresholds and tolerances 
-tile0GranThresh = 1.0
-tile1GranThresh = 1.0
-compMemBoundThresh = 1.0
-gsuGran = 128 / numCUs # TODO where does 128 come from? Is this GlobalSplitU granularity?
+    def __init__(self, numCUs = 120, ldsSize = 65536, l2Eff = .7, \
+                numChannels = 32, readBW = 64, aluRate = 256) :
 
-# Options for splitting problem into workgroups
+        self.numCUs = numCUs
+        self.ldsSize = ldsSize
+        self.l2Eff = l2Eff
+        self.numChannels = numChannels
+        self.readBW = readBW
+        self.aluRate = aluRate # depends on data type
+
+        self.l2BandwidthPerCU = (readBW * numChannels) // numCUs
+
+
+class Thresholds : 
+
+    def __init__(self, tile0Gran = 0.8, tile1Gran = 0.8, \
+                 compMemBound = 1.0, gsuGran = 1.0, ldsMinUtilization = 0.7) :
+
+        self.tile0Gran = tile0Gran
+        self.tile1Gran = tile1Gran
+        self.compMemBound = compMemBound
+        self.gsuGran = gsuGran
+        self.ldsMinUtilization = ldsMinUtilization
+
+
+# Valid parameter options
 # TODO pull this from Common.py?
 macroTileSizes = [32, 64, 80, 128, 160, 192, 224, 256] #[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768]
 macroTileSizes.sort()
@@ -57,87 +73,64 @@ globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64, 128, 256]
 # TODO what's a good set of values for this?
 depthUValues = [4, 8, 16, 32, 64, 128, 256]
 
-##################################
-# Values calculated in spreadsheet
-##################################
-tileSizes = macroTileSizes
 
-# N45 matrix calculation formulas
-def bytesPerCU(mm0, mm1, k) :
-    # bytes from A + bytes from B + bytes from C
-    return (mm0 * k * BPE + mm1 * k * BPE + mm0 * mm1 * BPE)
+# Function for spreadsheet logic
+def getGoodSolutionParameters(problem, hardware, thresholds) :
 
-def cyclesPerCU(mm0, mm1, k) :
-    return (mm0 * mm1 * k * 2) / aluRate
+    def checkDepthU(gsu) :
+        toReturn = []
+        for depthU in depthUValues :
+            ldsUsed = mm0 * depthU * problem.BPE + mm1 * depthU * problem.BPE
+            ldsLoad = ldsUsed / hardware.ldsSize
 
-def roofLine(mm0, mm1, k) :
-    return bytesPerCU(mm0, mm1, k) / cyclesPerCU(mm0, mm1, k)
-
-# bytes we can deliver / bytes we need
-def compMemBoundFactor(mm0, mm1, k) :
-    return ( (l2Eff / 100) * l2BandwidthPerCU ) / roofLine(mm0, mm1, k)
-##################################
-
-# C37 and D37
-mTiles = [M / size for size in tileSizes]
-nTiles = [N / size for size in tileSizes]
-
-# C39 and C40
-tile0Grans = [tiles / math.ceil(tiles) for tiles in mTiles]
-tile1Grans = [tiles / math.ceil(tiles) for tiles in nTiles]
-
-# C42 and N35
-mTileGranU = []
-mTilesXtile0Grans = []
-for i in range(0, len(mTiles)) :
-    mTileGranU.append(False if mTiles[i] * tile0Grans[i] < tile0GranThresh else True)
-    # N35 - adapting logic
-    # seems to be numTiles if gran = 1 and 0 otherwise
-    mTilesXtile0Grans.append(mTiles[i] if tile0Grans[i] == 1.0 else 0)
-
-# C43 and O35
-nTileGranU = []
-nTilesXtile1Grans = []
-for i in range(0, len(nTiles)) :
-    nTileGranU.append(False if nTiles[i] * tile1Grans[i] < tile1GranThresh else True)
-    # O35 - adapting logic
-    # seems to be numTiles if gran = 1 and 0 otherwise
-    nTilesXtile1Grans.append(nTiles[i] if tile1Grans[i] == 1.0 else 0)
-
-# C55
-goodMTandGSU = []
-totals = []
-for gsu in globalSplitUValues :
-    for mm0, numMTiles in zip(tileSizes, mTiles) :
-        for mm1, numNTiles in zip(tileSizes, nTiles):
-
-            numTiles = math.ceil(numMTiles * numNTiles * gsu)
-            compMemFact = compMemBoundFactor(mm0, mm1, math.ceil(K / gsu))
-
-            if (numCUs / numTiles) * compMemFact >= compMemBoundThresh and (numTiles / numCUs) >= 1 :
-                goodMTandGSU.append((mm0, mm1, gsu))
-                totals.append(numMTiles * numNTiles * gsu)
-
-goodAll = []
-for (mm0, mm1, gsu) in goodMTandGSU :
-    for depthU in depthUValues :
-        ldsUsed = mm0 * depthU * BPE + mm1 * depthU * BPE
-        ldsLoad = ldsUsed / ldsSize
-
-        if ldsLoad <= 1 and ldsLoad > 0.7 :
-            goodAll.append((mm0, mm1, gsu, depthU))
+            if ldsLoad <= 1 and ldsLoad > thresholds.ldsMinUtilization :
+                toReturn.append((mm0, mm1, gsu, depthU))
         
-print(goodAll)
+        return toReturn 
 
-# print(goodMTandGSU)
-# print("*******************************")
-# print(totals)
+    def checkGSU() :
+        toReturn = []
+        for gsu in globalSplitUValues :
+            numTiles = math.ceil(mTiles * nTiles * gsu)
 
-# print(min(totals))
-# print(max(totals))
+            k = math.ceil(problem.K / gsu)
 
-# print(tile0Grans)
-# print("*************************")
-# print(mTiles)
-# print("*************************")
-# print(mTilesXtile0Grans)
+            bytesPerCU = (mm0 * k * pr.BPE + mm1 * k * pr.BPE + mm0 * mm1 * pr.BPE)
+            cyclesPerCU = (mm0 * mm1 * k * 2) / hw.aluRate
+            roofLine = bytesPerCU / cyclesPerCU
+            compMemBoundFactor = (hw.l2Eff * hw.l2BandwidthPerCU) / roofLine
+
+            if (hardware.numCUs / numTiles) * compMemBoundFactor >= thresholds.compMemBound \
+                                and (numTiles / hardware.numCUs) >= 1 :
+                toReturn += checkDepthU(gsu)
+
+        return toReturn
+
+    toReturn = []
+    for mm0 in macroTileSizes :
+
+        mTiles = pr.M / mm0
+        tile0Gran = mTiles / math.ceil(mTiles)
+
+        if tile0Gran < thresholds.tile0Gran :
+            continue
+
+        for mm1 in macroTileSizes :
+
+            nTiles = pr.N / mm1 
+            tile1Gran = nTiles / math.ceil(nTiles)
+
+            if tile1Gran < thresholds.tile1Gran :
+                continue
+            
+            toReturn += checkGSU()
+
+    return toReturn
+
+
+# test call
+th = Thresholds()
+hw = HardwareProperties()
+pr = ProblemDefinition(1000, 1000, 500, "s")
+
+print(getGoodSolutionParameters(pr, hw, th))
