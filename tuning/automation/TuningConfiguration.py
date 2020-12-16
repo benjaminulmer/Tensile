@@ -208,9 +208,8 @@ class TuningConfiguration(object):
         except IOError:
             printExit("Cannot open file: %s" % filename)
 
-
+# TODO just a roundabout way of added "tileAware" to initialParams
 def generateProblemType(initialParams, tileAware=True):
-
     if tileAware:
         problemType = {
             "OperationType": "GEMM",

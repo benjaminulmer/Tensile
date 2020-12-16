@@ -31,21 +31,29 @@ class ProblemDefinition :
             self.BPE = 8
         elif dType == "s" :
             self.BPE = 4
-        else : # dType == "h"
+        else : # dType == "h" or "b"
             self.BPE = 2
 
 
 class HardwareProperties :
 
-    def __init__(self, numCUs = 120, ldsSize = 65536, l2Eff = .7, \
-                numChannels = 32, readBW = 64, aluRate = 256) :
+    def __init__(self, dType, numCUs = 120, ldsSize = 65536, l2Eff = .7, \
+                numChannels = 32, readBW = 64) :
 
         self.numCUs = numCUs
         self.ldsSize = ldsSize
         self.l2Eff = l2Eff
         self.numChannels = numChannels
         self.readBW = readBW
-        self.aluRate = aluRate # depends on data type
+
+        if dType == "d" :
+            self.aluRate = 128 # don't know what correct value is
+        elif dType == "s" :
+            self.aluRate = 256
+        elif dType == "h" :
+            self.aluRate = 1024
+        else : # dType == "b"
+            self.aluRate = 512
 
         self.l2BandwidthPerCU = (readBW * numChannels) // numCUs
 
@@ -58,13 +66,13 @@ class Thresholds :
         self.tile0Gran = tile0Gran
         self.tile1Gran = tile1Gran
         self.compMemBound = compMemBound
-        self.gsuGran = gsuGran
+        self.gsuGran = gsuGran # not used currently
         self.ldsMinUtilization = ldsMinUtilization
 
 
 # Valid parameter options
 # TODO pull this from Common.py?
-macroTileSizes = [32, 64, 80, 128, 160, 192, 224, 256] #[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768]
+macroTileSizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768, 100, 300]
 macroTileSizes.sort()
 
 # TODO what's a good set of values for this?
@@ -73,8 +81,12 @@ globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64, 128, 256]
 # TODO what's a good set of values for this?
 depthUValues = [4, 8, 16, 32, 64, 128, 256]
 
+# TODO are these good values?
+defaultWorkGroups = [(16, 16, 1), (8, 16, 2), (16, 8, 2), (16, 4, 4), (4, 16, 4), (8, 8, 4)]
 
-# Function for spreadsheet logic
+
+# Returns "good" solution parameters for problem given hardware properties and user provided thresholds
+# Based on Raman's spreadsheet tuning logic
 def getGoodSolutionParameters(problem, hardware, thresholds) :
 
     def checkDepthU(gsu) :
@@ -84,7 +96,7 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
             ldsLoad = ldsUsed / hardware.ldsSize
 
             if ldsLoad <= 1 and ldsLoad > thresholds.ldsMinUtilization :
-                toReturn.append((mm0, mm1, gsu, depthU))
+                toReturn.append({"mm0":mm0, "mm1":mm1, "gsu":gsu, "depthU":depthU})
         
         return toReturn 
 
@@ -100,8 +112,12 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
             roofLine = bytesPerCU / cyclesPerCU
             compMemBoundFactor = (hw.l2Eff * hw.l2BandwidthPerCU) / roofLine
 
+
+            # TODO best logic for here
             if (hardware.numCUs / numTiles) * compMemBoundFactor >= thresholds.compMemBound \
                                 and (numTiles / hardware.numCUs) >= 1 :
+
+            #if (compMemBoundFactor >= 1.0 and compMemBoundFactor <= 2.0) :
                 toReturn += checkDepthU(gsu)
 
         return toReturn
@@ -127,10 +143,54 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
 
     return toReturn
 
+# Returns possible tt values for given mm and wg
+def getThreadTiles(mm0, mm1, workGroupSizes) :
+    tt = []
 
-# test call
-th = Thresholds()
-hw = HardwareProperties()
-pr = ProblemDefinition(1000, 1000, 500, "s")
+    for wg in workGroupSizes :
+        tt0 = mm0 // wg[0]
+        tt1 = mm1 // wg[1]
 
-print(getGoodSolutionParameters(pr, hw, th))
+        tt.append((tt0, tt1))
+
+    return tt
+
+
+# testing stuff
+if __name__ == "__main__" :
+
+    th = Thresholds()
+    wgs = [(16, 16, 1), (8, 16, 2), (16, 8, 2), (16, 4, 4), (4, 16, 4), (8, 8, 4)]
+    results = {}
+    total = 0
+
+    # for d in ["s", "h", "b", "d"] :
+    #     for m in range(100, 10000, 200) :
+    #         for n in range(m, 10000, 200) :
+    #             for k in range(100, 10000, 200) :
+
+    #                 hw = HardwareProperties(d)
+    #                 pr = ProblemDefinition(m, n, k, d)
+    #                 num = len(getGoodSolutionParameters(pr, hw, th))
+
+    #                 #if num == 0 :
+    #                 #    print((m, n, k, d))
+
+    #                 if num in results :
+    #                     results[num] += 1
+    #                 else :
+    #                     results[num] = 1
+    #                 total += 1
+
+    print(results)
+    print(total)
+
+    #pr = ProblemDefinition(100, 300, 800, dt)
+    # print(getGoodSolutionParameters(pr, hw, th))
+
+    # threadTileSizes = getThreadTiles(128, 64, workGroupSizes)
+
+    # for (tt, wg) in zip(threadTileSizes, workGroupSizes) :
+    #     print(tt, end=" : ")
+    #     print(wg, end=" : ")
+    #     print((tt[0] * wg[0], tt[1] * wg[1]))

@@ -30,6 +30,7 @@ from distutils.util import strtobool
 from copy import deepcopy
 from ExtractSizes import *
 from TuningConfiguration import *
+from AnalyticConfigLogic import *
 
 
 def CopyContent(inputFileList, outputFile):
