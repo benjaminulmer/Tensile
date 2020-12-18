@@ -184,9 +184,15 @@ def GetProblemType(key,tileAware,disableHpa):
         initialParams["TransposeB"] = False
     else:
         initialParams["TransposeB"] = True
-    initialParams["DataType"] = dType
+    initialParams["DataType"] = dType[0]
+    initialParams["DestDataType"] = dType[1]
+    initialParams["ComputeDataType"] = dType[2]
 
-    if dType == "h" and disableHpa == "false":
+    if dType[0] == "h" and disableHpa == "false":
+        if initialParams["ComputeDataType"] == 's' :
+            # TODO this combo doens't work
+            pass
+
         initialParams["HighPrecisionAccumulate"] = True
 
     problemType = generateProblemType(initialParams,tileAware)
