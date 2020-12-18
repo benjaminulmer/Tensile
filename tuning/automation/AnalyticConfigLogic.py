@@ -37,7 +37,7 @@ class ProblemDefinition :
 
 class HardwareProperties :
 
-    def __init__(self, dType, numCUs = 120, ldsSize = 65536, l2Eff = .7, \
+    def __init__(self, dType, numCUs = 60, ldsSize = 65536, l2Eff = .7, \
                 numChannels = 32, readBW = 64) :
 
         self.numCUs = numCUs
@@ -72,7 +72,7 @@ class Thresholds :
 
 # Valid parameter options
 # TODO pull this from Common.py?
-macroTileSizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768, 100, 300]
+macroTileSizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768]
 macroTileSizes.sort()
 
 # TODO what's a good set of values for this?
@@ -82,7 +82,7 @@ globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64, 128, 256]
 depthUValues = [4, 8, 16, 32, 64, 128, 256]
 
 # TODO are these good values?
-defaultWorkGroups = [(16, 16, 1), (8, 16, 2), (16, 8, 2), (16, 4, 4), (4, 16, 4), (8, 8, 4)]
+defaultWorkGroups = [[16, 16, 1], [8, 16, 2], [16, 8, 2], [16, 4, 4], [4, 16, 4], [8, 8, 4]]
 
 
 # Returns "good" solution parameters for problem given hardware properties and user provided thresholds
@@ -93,6 +93,8 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
         toReturn = []
         for depthU in depthUValues :
             ldsUsed = mm0 * depthU * problem.BPE + mm1 * depthU * problem.BPE
+            ldsUsedRound = int(2**(math.ceil(math.log(ldsUsed, 2)))) # round up to nearest power of 2
+            ldsUsed += ldsUsedRound
             ldsLoad = ldsUsed / hardware.ldsSize
 
             if ldsLoad <= 1 and ldsLoad > thresholds.ldsMinUtilization :
@@ -107,10 +109,10 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
 
             k = math.ceil(problem.K / gsu)
 
-            bytesPerCU = (mm0 * k * pr.BPE + mm1 * k * pr.BPE + mm0 * mm1 * pr.BPE)
-            cyclesPerCU = (mm0 * mm1 * k * 2) / hw.aluRate
+            bytesPerCU = (mm0 * k * problem.BPE + mm1 * k * problem.BPE + mm0 * mm1 * problem.BPE)
+            cyclesPerCU = (mm0 * mm1 * k * 2) / hardware.aluRate
             roofLine = bytesPerCU / cyclesPerCU
-            compMemBoundFactor = (hw.l2Eff * hw.l2BandwidthPerCU) / roofLine
+            compMemBoundFactor = (hardware.l2Eff * hardware.l2BandwidthPerCU) / roofLine
 
 
             # TODO best logic for here
@@ -125,7 +127,7 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
     toReturn = []
     for mm0 in macroTileSizes :
 
-        mTiles = pr.M / mm0
+        mTiles = problem.M / mm0
         tile0Gran = mTiles / math.ceil(mTiles)
 
         if tile0Gran < thresholds.tile0Gran :
@@ -133,7 +135,7 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
 
         for mm1 in macroTileSizes :
 
-            nTiles = pr.N / mm1 
+            nTiles = problem.N / mm1
             tile1Gran = nTiles / math.ceil(nTiles)
 
             if tile1Gran < thresholds.tile1Gran :
@@ -160,7 +162,7 @@ def getThreadTiles(mm0, mm1, workGroupSizes) :
 if __name__ == "__main__" :
 
     th = Thresholds()
-    wgs = [(16, 16, 1), (8, 16, 2), (16, 8, 2), (16, 4, 4), (4, 16, 4), (8, 8, 4)]
+    wgs = [[16, 16, 1], [8, 16, 2], [16, 8, 2], [16, 4, 4], [4, 16, 4], [8, 8, 4]]
     results = {}
     total = 0
 
