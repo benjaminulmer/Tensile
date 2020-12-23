@@ -1,35 +1,17 @@
 #!/bin/bash
 
-
-
 function extract_sizes() {
 
-  pushd "${WORKING_PATH}" > /dev/null
-  local EXTRACT_SIZE_PATH=`pwd`
-  popd > /dev/null
-
-  EXTRACT_EXE="python3 ${AUTOMATION_ROOT}/GenerateTuningConfigurations.py ${SIZE_LOG} ${EXTRACT_SIZE_PATH} ${OUTPUT_FILE} ${LIBRARY} ${TILE_AWARE} ${MFMA} ${RK} ${DISABLE_STRIDES} ${PROBLEM_DEFINITION}  ${INITIALIZATION} ${TENSILE_CLIENT} ${DISABLE_HPA}"
+  EXTRACT_EXE="python3 ${AUTOMATION_ROOT}/GenerateTuningConfigurations.py ${SIZE_LOG} ${WORKING_PATH} ${OUTPUT_FILE} ${LIBRARY} ${TILE_AWARE} ${MFMA} ${RK} ${DISABLE_STRIDES} ${PROBLEM_DEFINITION}  ${INITIALIZATION} ${TENSILE_CLIENT} ${DISABLE_HPA}"
 
   ${EXTRACT_EXE}
-
-  pushd ${PEFORMANCE_PATH} > /dev/null
-  chmod +x *
-  popd > /dev/null
 }
 
 function extract_network_sizes() {
 
-  pushd "${WORKING_PATH}" > /dev/null
-  local EXTRACT_SIZE_PATH=`pwd`
-  popd > /dev/null
-
-  EXTRACT_EXE="python3 ${AUTOMATION_ROOT}/GenerateTuningConfigurations.py ${SIZE_DIR} ${NETWORK} ${EXTRACT_SIZE_PATH} ${OUTPUT_FILE} ${LIBRARY} ${TILE_AWARE} ${MFMA} ${RK} ${DISABLE_STRIDES} ${PROBLEM_DEFINITION} ${INITIALIZATION} ${TENSILE_CLIENT} ${DISABLE_HPA}"
+  EXTRACT_EXE="python3 ${AUTOMATION_ROOT}/GenerateTuningConfigurations.py ${SIZE_DIR} ${NETWORK} ${WORKING_PATH} ${OUTPUT_FILE} ${LIBRARY} ${TILE_AWARE} ${MFMA} ${RK} ${DISABLE_STRIDES} ${PROBLEM_DEFINITION} ${INITIALIZATION} ${TENSILE_CLIENT} ${DISABLE_HPA}"
 
   ${EXTRACT_EXE}
-
-  pushd ${PEFORMANCE_PATH} > /dev/null
-  chmod +x *
-  popd > /dev/null
 }
 
 function provision_tensile() {
@@ -98,6 +80,7 @@ while true; do
     -t | --tag )            TAG="$2"; shift 3;;
     -f | --tensile-fork)    TENSILE_FORK="$2"; shift 2;;
     --rocblas-fork)         ROCBLAS_FORK="$2"; shift 2;;
+    -p | --tensile-path)    TENSILE_PATH="$2"; shift 2;;
     -b | --branch  )        TENSILE_BRANCH="$2"; shift 2;;
     -c | --commit )         COMMIT="$2"; shift 2;;
     -o | --output )         OUTPUT_FILE="$2"; shift 2;;
@@ -149,23 +132,15 @@ fi
 TOOLS_ROOT=`dirname "$0"`
 TOOLS_ROOT=`( cd "${TOOLS_ROOT}" && cd .. && pwd )`
 
-TENSILE_ROOT="${WORKING_PATH}/reops"
 BUILD_ROOT="${WORKING_PATH}/configs"
 STAGE_ROOT="${WORKING_PATH}/make"
+OUT_SCRIPT_ROOT="${WORKING_PATH}/scripts"
+OUT_SCRIPT2_ROOT="${WORKING_PATH}/scripts2"
 TENSILE_ROOT="${WORKING_PATH}/tensile"
-CONFIGURATION_ROOT="${TOOLS_ROOT}/configuration"
 AUTOMATION_ROOT="${TOOLS_ROOT}/automation"
 SCRIPT_ROOT="${TOOLS_ROOT}/scripts"
-SIZE_PATH="${WORKING_PATH}/sizes"
-PROBLEM_SPEC="${WORKING_PATH}/problem_spec.csv"
-PEFORMANCE_PATH="${WORKING_PATH}/scripts"
 
-mkdir -p ${BUILD_ROOT}
 mkdir -p ${STAGE_ROOT}
-mkdir -p ${TENSILE_ROOT}
-mkdir -p ${SIZE_PATH}
-mkdir -p ${PEFORMANCE_PATH}
-
 
 # extracts the sizes from the logs and generates the tuning configurations
 if [ -z ${NETWORK+foo} ]; then
@@ -174,6 +149,16 @@ else
   extract_network_sizes
 fi
 
+# make scripts executable
+pushd ${OUT_SCRIPT_ROOT} > /dev/null
+chmod +x *
+popd > /dev/null
+
+pushd ${OUT_SCRIPT2_ROOT} > /dev/null
+chmod +x *
+popd > /dev/null
+
+# prepare scripts to run tuning
 ls ${BUILD_ROOT}/*.yaml | xargs -n1 basename | xargs ${SCRIPT_ROOT}/stage_tuning.sh ${BUILD_ROOT} ${STAGE_ROOT}
 
 # if enabled, this will provision tensile and set it up for tuning
@@ -182,4 +167,3 @@ if ${SUPPRESS_TENSILE} ; then
 else
   provision_tensile
 fi
-
