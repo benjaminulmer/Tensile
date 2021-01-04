@@ -1,11 +1,10 @@
 #!/bin/bash
 
-
 function provision_rocblas() {
 
   local ROCBLAS_ID=$1
 
-  local PROVISION_ROCBLAS="${SCRIPT_ROOT}/provision_repo.sh -r -w ${ROCBLAS_ROOT} -b ${ROCBLAS_BRANCH} -i ${ROCBLAS_ID} --rocblas-fork ${ROCBLAS_FORK}"
+  local PROVISION_ROCBLAS="${SCRIPT_ROOT}/provision_repo.sh -r -w ${ROCBLAS_ROOT} -b ${ROCBLAS_BRANCH} -i ${ROCBLAS_ID} -f ${ROCBLAS_FORK}"
 
   if [ -n "${ROCBLAS_FORK}" ]; then
     PROVISION_ROCBLAS="${PROVISION_ROCBLAS} --rocblas-fork ${ROCBLAS_FORK}"
@@ -27,16 +26,30 @@ function provision_rocblas() {
   ${PROVISION_ROCBLAS}
 }
 
+HELP_STR="
+Usage: ./provision_verification.sh -w WORKING_PATH -r TENSILE_PATH -l LIBRARY [options]
 
-HELP_STR="usage: ./provision_verification.sh [-w|--working-path <path>] [-r <Tensile reference>] [-b|--branch <branch>] [-c | --commit <github commit id>] [-t|--tag <githup tag>] [-l|--library <gpu library>] [-n|--no-merge] [--no-massage]  [--rocblas-fork <username>] [-h|--help]"
-
+Options:
+  [-h|--help]                   Display this help message
+  [-w|--working-path PATH]      Working path for verification
+  [-r|--tensile-path PATH]      Path to Tensile
+  [-l|--library LIBRARY]        Library to tune on (e.g. vega20)
+  [-f|--rocblas-fork USERNAME]  rocBLAS fork to use
+  [-b|--branch BRANCH]          rocBLAS branch to use
+  [-c|--commit COMMIT_ID]       rocBLAS commit to use
+  [-t|--tag GITHUP_TAG]         rocBLAS tag to use
+  [-n|--no-merge]               ?? Skip merge step
+  [--no-massage]                ?? Skip massage step
+"
 HELP=false
 ROCBLAS_BRANCH='develop'
 ROCBLAS_FORK='RocmSoftwarePlatform'
 MASSAGE=true
 MERGE=true
 
-OPTS=`getopt -o ht:w:b:c:i:r:nl:f: --long help,working-path:,size-log,output:,tag:,branch:,commit:,no-merge,no-massage,library:,--sclk:,type:,rocblas-fork: -n 'parse-options' -- "$@"`
+OPTS=`getopt -o ht:w:b:c:i:r:nl:f: \
+--long help,working-path:,size-log,output:,tag:,branch:,commit:,\
+no-merge,no-massage,library:,--sclk:,type:,rocblas-fork: -n 'parse-options' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
 
