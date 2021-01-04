@@ -82,7 +82,7 @@ globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64, 128, 256]
 depthUValues = [4, 8, 16, 32, 64, 128, 256]
 
 # TODO are these good values?
-defaultWorkGroups = [[16, 16, 1], [8, 16, 2], [16, 8, 2], [16, 4, 4], [4, 16, 4], [8, 8, 4]]
+defaultWorkGroups = [[16, 16, 1], [8, 16, 2], [16, 8, 2], [16, 4, 4], [4, 16, 4], [8, 8, 4], [32, 16, 1], [16, 32, 1], [64, 16, 1], [16, 64, 1]]
 
 
 # Returns "good" solution parameters for problem given hardware properties and user provided thresholds
@@ -184,8 +184,11 @@ if __name__ == "__main__" :
     #                     results[num] = 1
     #                 total += 1
 
-    print(results)
-    print(total)
+    pr = ProblemDefinition(3072, 4096, 1024, 's')
+    hw = HardwareProperties('s')
+    foo = getGoodSolutionParameters(pr, hw, th)
+    for f in foo :
+        print(f)
 
     #pr = ProblemDefinition(100, 300, 800, dt)
     # print(getGoodSolutionParameters(pr, hw, th))

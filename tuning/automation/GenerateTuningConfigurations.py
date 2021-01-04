@@ -368,7 +368,7 @@ def addGroup(problemGroup,dType,sizes,tileAware,transposeType):
                 if [tt0, tt1] not in scheme["ThreadTile"] :
                     scheme["ThreadTile"].append([tt0, tt1])
 
-        if not vals :
+        if not vals or not scheme["WorkGroup"] :
             # TODO handle this case
             print(size)
         else :
