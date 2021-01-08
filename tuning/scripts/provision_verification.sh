@@ -7,7 +7,7 @@ function provision_rocblas() {
   local PROVISION_ROCBLAS="${SCRIPT_ROOT}/provision_repo.sh -r -w ${ROCBLAS_ROOT} -b ${ROCBLAS_BRANCH} -i ${ROCBLAS_ID} -f ${ROCBLAS_FORK}"
 
   if [ -n "${ROCBLAS_FORK}" ]; then
-    PROVISION_ROCBLAS="${PROVISION_ROCBLAS} --rocblas-fork ${ROCBLAS_FORK}"
+    PROVISION_ROCBLAS="${PROVISION_ROCBLAS} -f ${ROCBLAS_FORK}"
   fi
 
   if [ -n "${ID}" ]; then
@@ -49,7 +49,7 @@ MERGE=true
 
 OPTS=`getopt -o ht:w:b:c:i:r:nl:f: \
 --long help,working-path:,size-log,output:,tag:,branch:,commit:,\
-no-merge,no-massage,library:,--sclk:,type:,rocblas-fork: -n 'parse-options' -- "$@"`
+no-merge,no-massage,library:,sclk:,type:,rocblas-fork: -n 'parse-options' -- "$@"`
 
 if [ $? != 0 ] ; then echo "Failed parsing options." >&2 ; exit 1 ; fi
 
@@ -67,8 +67,8 @@ while true; do
     -n | --no-merge )     MERGE=false; shift ;;
     --no-massage )        MASSAGE=false; shift ;;
     -l | --library )      LIBRARY="$2"; shift 2;;
-    -f | --sclk )         SCLK="$2"; shift 2;;
-    --rocblas-fork )      ROCBLAS_FORK="$2"; shift 2;;
+    -s | --sclk )         SCLK="$2"; shift 2;;
+    -f | --rocblas-fork ) ROCBLAS_FORK="$2"; shift 2;;
     --log-dir )           LOGS="$2"; shift 2;;
     -- ) shift; break ;;
     * ) break ;;
@@ -192,7 +192,7 @@ ROCBLAS_BENCH_PATH="${ROCBLAS_REFERENCE_NAME}/build/release/clients/staging/rocb
 
 if [ ! -f ${ROCBLAS_BENCH_PATH} ]; then
     rm -r -f ${ROCBLAS_REFERENCE_NAME}/build
-    BUILD_ROCBLAS="./install.sh -c"
+    BUILD_ROCBLAS="./install.sh -d -c"
     pushd ${REFERENCE_NAME} > /dev/null
     ${BUILD_ROCBLAS} > build-reference.out 2>&1
     popd > /dev/null
