@@ -96,7 +96,7 @@ LIBRARY=${4}
 
 # TODO: test options have valid values
 
-if [ -z ${LOGS+foo} ]; then
+if [ -z ${LOGS+x} ]; then
   LOGS=${WORKING_PATH}/logs
 fi
 
