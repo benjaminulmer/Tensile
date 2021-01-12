@@ -32,10 +32,8 @@ function provision_tensile() {
 
 HELP=false
 TENSILE_CLIENT=new
-SUPPRESS_TENSILE=false
 TENSILE_FORK='ROCmSoftwarePlatform'
 TENSILE_BRANCH='develop'
-TENSILE_HOST="https://github.com/${TENSILE_FORK}/Tensile.git"
 TILE_AWARE=false
 MFMA=false
 RK=false
@@ -47,35 +45,40 @@ DISABLE_HPA=false
 HELP_STR="
 Usage: ${0} WORKING_PATH LOG_PATH OUTPUT_SUFFIX.yaml LIBRARY [options]
 
-  where LIBRARY is {vega10|vega20|...}
+  where LIBRARY = {arcturus | vega20 | vega10 | mi25 | r9nano | hip}
 
 Options:
-  -h | --help                    Display this help message
-  -n | --network NAME            Neural network name. If this is set, LOG_PATH should be a directory. Will only tune log files with this string in the file name
-  -p | --tensile-path PATH       Path to existing Tensile (will not provision new copy)
+-h | --help                     Display this help message
+-n | --network NAME             Neural network name. If this is set, LOG_PATH should be a directory. \
+Will only tune log files with this string in the file name
+-p | --tensile-path PATH        Path to existing Tensile (will not provision new copy)
+
 Options for provisioning Tensile:
-  -f | --tensile-fork USERNAME    Tensile fork to use
-  -b | --branch BRANCH            Tensile branch to use
-  -c | --commit COMMIT_ID         Tensile commit to use
-  -t | --tag GITHUB_TAG           Tensile tag to use
-  -i | --id ID                    ?? 
+-f | --tensile-fork USERNAME    Tensile fork to use
+-b | --branch BRANCH            Tensile branch to use
+-c | --commit COMMIT_ID         Tensile commit to use
+-t | --tag GITHUB_TAG           Tensile tag to use
+-i | --id ID                    ID to append to Tensile directory name
+
 Options for config generation:
-  -a | --tile-aware               ?? 
-  -m | --mfma                     Use MFMA instruction in tuning
-  -r | --rk                       ?? Something with replacement kernels
-  -s | --disable-strides          ?? Disables something
-       --initialization           ?? Data initialization when tuning
-       --problem-definition \\
-             {gemm|batch|both}    ?? Which problems?
-       --client {new|old|both}    Which client to use
+-a | --tile-aware               Enables tileaware selection
+-m | --mfma                     Enables using MFMA instructions
+-r | --rk                       Enables using replacement kernels
+-s | --disable-strides          Disables custom strides
+
+--initialization {rand_int | trig_float | hpl} (=rand_int)  Data initialization for matrices
+--problem-definition {gemm | batch | both} (=both)          Which problem types to tune
+--client {new | old | both} (=new)                          Which Tensile runtime client to use
 "
 
-OPTS=`getopt -o h,n:,p:,f:,b:,c:,t:,i:,a,m,r,s \
+if ! OPTS=$(getopt -o h,n:,p:,f:,b:,c:,t:,i:,a,m,r,s \
 --long help,network:,tensile-path:,tensile-fork:,branch:,commit:,tag:,id:,\
 tile-aware,mfma,rk,disable-strides,initialization:,problem-definition:,client \
- -n "${0}" -- "$@"`
-
-if [ $? != 0 ] ; then echo "Failed parsing options" >&2 ; exit 1 ; fi
+ -n "${0}" -- "$@")
+then
+  echo "Failed parsing options" >&2
+  exit 1
+fi
 
 eval set -- "$OPTS"
 
@@ -124,8 +127,7 @@ if [[ ${TENSILE_CLIENT} != both && ${TENSILE_CLIENT} != old ]]; then
 fi
 
 # determine full path of tools root
-TOOLS_ROOT=`dirname "$0"`
-TOOLS_ROOT=`( cd "${TOOLS_ROOT}" && cd .. && pwd )`
+TOOLS_ROOT=$(realpath "$0" | xargs dirname | xargs dirname)
 
 BUILD_ROOT=${WORKING_PATH}/configs
 STAGE_ROOT=${WORKING_PATH}/make
@@ -135,7 +137,7 @@ TENSILE_ROOT=${WORKING_PATH}/tensile
 AUTOMATION_ROOT=${TOOLS_ROOT}/automation
 SCRIPT_ROOT=${TOOLS_ROOT}/scripts
 
-mkdir -p ${STAGE_ROOT}
+mkdir -p "${STAGE_ROOT}"
 
 # create configs for sizes in log file/dir
 echo "Generating tuning configurations"
@@ -147,27 +149,27 @@ fi
 ${EXTRACT_EXE}
 
 # make outputed scripts executable
-pushd ${OUT_SCRIPT_ROOT} > /dev/null
-chmod +x *
-popd > /dev/null
+pushd "${OUT_SCRIPT_ROOT}" > /dev/null || exit 2
+chmod +x -- *
+popd > /dev/null || exit 2
 
-pushd ${OUT_SCRIPT2_ROOT} > /dev/null
-chmod +x *
-popd > /dev/null
+pushd "${OUT_SCRIPT2_ROOT}" > /dev/null || exit 2
+chmod +x -- *
+popd > /dev/null || exit 2
 
 # provision tensile if path not provided
 if [ -z ${TENSILE_PATH+x} ]; then
   echo "Tensile path not provided. Trying to provision copy"
-  TENSILE_PATH=`( cd "${WORKING_PATH}" && pwd )`/tensile/Tensile
-  if [ ! -d ${TENSILE_PATH} ]; then
+  TENSILE_PATH=$(realpath "${WORKING_PATH}")/tensile/Tensile
+  if [ ! -d "${TENSILE_PATH}" ]; then
     provision_tensile
   else
     echo "Path already exists. Assuming Tensile previously provisioned"
   fi
 else
   echo "Using existing Tensile path"
-  TENSILE_PATH=`( cd "${TENSILE_PATH}" && pwd )`
+  TENSILE_PATH=$(realpath "${WORKING_PATH}")
 fi
 
 echo "Preparing scripts to run tuning"
-ls ${BUILD_ROOT}/*.yaml | xargs -n1 basename | xargs ${SCRIPT_ROOT}/stage_tuning.sh ${BUILD_ROOT} ${STAGE_ROOT} ${TENSILE_PATH}
+find "${BUILD_ROOT}" -name '*.yaml' -print0 | xargs -0 -n1 basename | xargs "${SCRIPT_ROOT}"/stage_tuning.sh "${BUILD_ROOT}" "${STAGE_ROOT}" "${TENSILE_PATH}"
