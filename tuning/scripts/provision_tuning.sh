@@ -2,32 +2,22 @@
 
 function provision_tensile() {
 
-  local PROVISION_TENSILE="${SCRIPT_ROOT}/provision_repo.sh -w ${TENSILE_ROOT} -b ${TENSILE_BRANCH} -f ${TENSILE_FORK}"
-
-  local TENSILE_PATH=Tensile
+  local EXE="${SCRIPT_ROOT}/provision_repo.sh"
+  local ARGS=(-w "${WORKING_PATH}/tensile" -b "${TENSILE_BRANCH}" -f "${TENSILE_FORK}")
 
   if [ -n "${ID}" ]; then
-    TENSILE_PATH="${TENSILE_PATH}-${ID}"
-    PROVISION_TENSILE="${PROVISION_TENSILE} -i ${ID}"
+    ARGS+=(-i "${ID}")
   fi
 
   if [ -n "${TAG}" ]; then
-    TENSILE_PATH="${TENSILE_PATH}-${TAG}"
-  else
-    if [ -n "${COMMIT}" ]; then
-      TENSILE_PATH="${TENSILE_PATH}-${COMMIT}"
-    fi
-  fi
-
-  if [ -n "${TAG}" ]; then
-    PROVISION_TENSILE="${PROVISION_TENSILE} -t ${TAG}"
+    ARGS+=(-t "${TAG}")
   fi
 
   if [ -n "${COMMIT}" ]; then
-    PROVISION_TENSILE="${PROVISION_TENSILE} -c ${COMMIT}"
+    ARGS+=(-c "${COMMIT}")
   fi
 
-  ${PROVISION_TENSILE}
+  ${EXE} "${ARGS[@]}"
 }
 
 HELP=false
@@ -76,7 +66,7 @@ if ! OPTS=$(getopt -o h,n:,p:,f:,b:,c:,t:,i:,a,m,r,s \
 tile-aware,mfma,rk,disable-strides,initialization:,problem-definition:,client \
  -n "${0}" -- "$@")
 then
-  echo "Failed parsing options" >&2
+  echo "Failed parsing options"
   exit 1
 fi
 
@@ -105,7 +95,7 @@ while true; do
 done
 
 if $HELP; then
-  echo "${HELP_STR}" >&2
+  echo "${HELP_STR}"
   exit 0
 fi
 
@@ -122,7 +112,7 @@ LIBRARY=${4}
 
 # TODO: test options have valid values
 
-if [[ ${TENSILE_CLIENT} != both && ${TENSILE_CLIENT} != old ]]; then
+if [ "${TENSILE_CLIENT}" != both ] && [ "${TENSILE_CLIENT}" != old ]; then
   TENSILE_CLIENT=new
 fi
 
@@ -133,7 +123,6 @@ BUILD_ROOT=${WORKING_PATH}/configs
 STAGE_ROOT=${WORKING_PATH}/make
 OUT_SCRIPT_ROOT=${WORKING_PATH}/scripts
 OUT_SCRIPT2_ROOT=${WORKING_PATH}/scripts2
-TENSILE_ROOT=${WORKING_PATH}/tensile
 AUTOMATION_ROOT=${TOOLS_ROOT}/automation
 SCRIPT_ROOT=${TOOLS_ROOT}/scripts
 
@@ -141,21 +130,24 @@ mkdir -p "${STAGE_ROOT}"
 
 # create configs for sizes in log file/dir
 echo "Generating tuning configurations"
-if [ -z ${NETWORK+x} ]; then
-  EXTRACT_EXE="python3 ${AUTOMATION_ROOT}/GenerateTuningConfigurations.py ${LOG_PATH} ${WORKING_PATH} ${OUTPUT_SUFFIX} ${LIBRARY} ${TILE_AWARE} ${MFMA} ${RK} ${DISABLE_STRIDES} ${PROBLEM_DEFINITION} ${INITIALIZATION} ${TENSILE_CLIENT} ${DISABLE_HPA}"
-else
-  EXTRACT_EXE="python3 ${AUTOMATION_ROOT}/GenerateTuningConfigurations.py ${LOG_PATH} ${NETWORK} ${WORKING_PATH} ${OUTPUT_SUFFIX} ${LIBRARY} ${TILE_AWARE} ${MFMA} ${RK} ${DISABLE_STRIDES} ${PROBLEM_DEFINITION} ${INITIALIZATION} ${TENSILE_CLIENT} ${DISABLE_HPA}"
+ARGS=("${AUTOMATION_ROOT}/GenerateTuningConfigurations.py" "${LOG_PATH}")
+
+if [ -n "${NETWORK}" ]; then
+  ARGS+=("${NETWORK}")
 fi
-${EXTRACT_EXE}
+
+ARGS+=("${WORKING_PATH}" "${OUTPUT_SUFFIX}" "${LIBRARY}" "${TILE_AWARE}" "${MFMA}" "${RK}" \
+  "${DISABLE_STRIDES}" "${PROBLEM_DEFINITION}" "${INITIALIZATION}" "${TENSILE_CLIENT}" "${DISABLE_HPA}")
+python3 "${ARGS[@]}"
 
 # make outputed scripts executable
-pushd "${OUT_SCRIPT_ROOT}" > /dev/null || exit 2
+pushd "${OUT_SCRIPT_ROOT}" > /dev/null || exit
 chmod +x -- *
-popd > /dev/null || exit 2
+popd > /dev/null || exit
 
-pushd "${OUT_SCRIPT2_ROOT}" > /dev/null || exit 2
+pushd "${OUT_SCRIPT2_ROOT}" > /dev/null || exit
 chmod +x -- *
-popd > /dev/null || exit 2
+popd > /dev/null || exit
 
 # provision tensile if path not provided
 if [ -z ${TENSILE_PATH+x} ]; then
@@ -168,8 +160,10 @@ if [ -z ${TENSILE_PATH+x} ]; then
   fi
 else
   echo "Using existing Tensile path"
-  TENSILE_PATH=$(realpath "${WORKING_PATH}")
+  TENSILE_PATH=$(realpath "${TENSILE_PATH}")
 fi
 
 echo "Preparing scripts to run tuning"
-find "${BUILD_ROOT}" -name '*.yaml' -print0 | xargs -0 -n1 basename | xargs "${SCRIPT_ROOT}"/stage_tuning.sh "${BUILD_ROOT}" "${STAGE_ROOT}" "${TENSILE_PATH}"
+find "${BUILD_ROOT}" -name '*.yaml' -print0 \
+  | xargs -0 -n1 basename \
+  | xargs "${SCRIPT_ROOT}/stage_tuning.sh" "${BUILD_ROOT}" "${STAGE_ROOT}" "${TENSILE_PATH}"
