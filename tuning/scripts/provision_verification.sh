@@ -55,10 +55,10 @@ then
   exit 1
 fi
 
-eval set -- "$OPTS"
+eval set -- "${OPTS}"
 
 while true; do
-  case "$1" in
+  case ${1} in
     -h | --help )            HELP=true; shift ;;
     -p | --rocblas-path )    ROCBLAS_PATH=${2}; shift 2;;
     -f | --rocblas-fork )    ROCBLAS_FORK=${2}; shift 2;;
@@ -76,13 +76,13 @@ while true; do
   esac
 done
 
-if $HELP; then
+if ${HELP}; then
   echo "${HELP_STR}"
   exit 0
 fi
 
-if [ $# != 4 ]; then
-  echo "Exactly four positional args required"
+if [ $# != 3 ]; then
+  echo "Exactly three positional args required"
   echo "See ${0} --help"
   exit 2
 fi
@@ -102,7 +102,7 @@ if [ ${MERGE} == false ]; then
 fi
 
 # determine full path of tools root
-TOOLS_ROOT=$(realpath "$0" | xargs dirname | xargs dirname)
+TOOLS_ROOT=$(realpath "${0}" | xargs dirname | xargs dirname)
 
 SCRIPT_ROOT=${TOOLS_ROOT}/scripts
 LIBRARY_ROOT=${WORKING_PATH}/library
@@ -144,7 +144,7 @@ REFERENCE_LIBRARY_ASM=${ROCBLAS_PATH}/library/src/blas3/Tensile/Logic/asm_full
 REFERENCE_LIBRARY_ARCHIVE=${ROCBLAS_PATH}/library/src/blas3/Tensile/Logic/archive
 
 # copy library logic files
-if [ "$(ls -A "${EXACT_PATH}")" ] || [ "${REDO}" == true ]; then
+if [ "$(ls -A "${EXACT_PATH}")" ] || ${REDO}; then
   for PATH_NAME in $LOGIC_FILE_PATHS; do
     cp "${PATH_NAME}/*" "${EXACT_PATH}"
   done
@@ -183,7 +183,7 @@ if [ "${MERGE}" == true ]; then
   fi
 
   echo "Merging tuned logic with existing logic"
-  if [ "$(ls -A "${MERGE_PATH}")" ] || [ "${REDO}" == true ]; then
+  if [ "$(ls -A "${MERGE_PATH}")" ] || ${REDO}; then
     python3 "${MERGE_SCRIPT}" "${ASM_PATH}" "${EXACT_PATH}" "${MERGE_PATH}" 2>&1 \
       | tee "${LOGS}/merge.log"
   else
@@ -198,7 +198,7 @@ fi
 # perform massage step
 if [ "${MASSAGE}" == true ]; then
   echo "Massaging logic"
-  if [ "$(ls -A "${MASSAGE_PATH}")" ] || [ "${REDO}" == true ]; then
+  if [ "$(ls -A "${MASSAGE_PATH}")" ] || ${REDO}; then
     python3 "${MASSAGE_SCRIPT}" "${MERGE_PATH}" "${MASSAGE_PATH}" 2>&1 \
       | tee "${LOGS}/massage.log"
   else
@@ -232,7 +232,7 @@ CREATE_LIBRARY_ARGS=(--merge-files --no-legacy-components --no-short-file-names 
 # create new (tuned) Tensile library
 echo "Creating new Tensile library"
 if [ -f "${CREATE_LIBRARY_EXE}" ]; then
-    if [ ! -d "${TENSILE_LIBRARY_PATH}/library" ] || [ "${REDO}" == true ]; then
+    if [ ! -d "${TENSILE_LIBRARY_PATH}/library" ] || ${REDO}; then
         ${CREATE_LIBRARY_EXE} "${CREATE_LIBRARY_ARGS[@]}"
     else
       echo "Path already exists. Assuming library already built"

@@ -70,10 +70,10 @@ then
   exit 1
 fi
 
-eval set -- "$OPTS"
+eval set -- "${OPTS}"
 
 while true; do
-  case "$1" in
+  case ${1} in
     -h | --help )            HELP=true; shift ;;
     -n | --network )         NETWORK=${2}; shift 2;;
     -p | --tensile-path )    TENSILE_PATH=${2}; shift 2;;
@@ -94,7 +94,7 @@ while true; do
   esac
 done
 
-if $HELP; then
+if ${HELP}; then
   echo "${HELP_STR}"
   exit 0
 fi
@@ -117,7 +117,7 @@ if [ "${TENSILE_CLIENT}" != both ] && [ "${TENSILE_CLIENT}" != old ]; then
 fi
 
 # determine full path of tools root
-TOOLS_ROOT=$(realpath "$0" | xargs dirname | xargs dirname)
+TOOLS_ROOT=$(realpath "${0}" | xargs dirname | xargs dirname)
 
 BUILD_ROOT=${WORKING_PATH}/configs
 STAGE_ROOT=${WORKING_PATH}/make
@@ -153,6 +153,7 @@ popd > /dev/null || exit
 if [ -z ${TENSILE_PATH+x} ]; then
   echo "Tensile path not provided. Trying to provision copy"
   TENSILE_PATH=$(realpath "${WORKING_PATH}")/tensile/Tensile
+
   if [ ! -d "${TENSILE_PATH}" ]; then
     provision_tensile
   else
