@@ -114,9 +114,8 @@ MASSAGE_PATH=${LIBRARY_ROOT}/massage
 
 TENSILE_LIBRARY_PATH=${LIBRARY_ROOT}/tensile_library
 mkdir -p "${TENSILE_LIBRARY_PATH}"
-#TENSILE_LIBRARY_PATH=$(realpath "${TENSILE_LIBRARY_PATH}")
+TENSILE_LIBRARY_PATH=$(realpath "${TENSILE_LIBRARY_PATH}")
 
-mkdir -p "${ROCBLAS_ROOT}"
 mkdir -p "${EXACT_PATH}"
 mkdir -p "${ASM_PATH}"
 mkdir -p "${ARCHIVE_PATH}"
@@ -144,14 +143,14 @@ REFERENCE_LIBRARY_ASM=${ROCBLAS_PATH}/library/src/blas3/Tensile/Logic/asm_full
 REFERENCE_LIBRARY_ARCHIVE=${ROCBLAS_PATH}/library/src/blas3/Tensile/Logic/archive
 
 # copy library logic files
-if [ "$(ls -A "${EXACT_PATH}")" ] || ${REDO}; then
+if [ -z "$(ls -A "${EXACT_PATH}")" ] || ${REDO}; then
   for PATH_NAME in $LOGIC_FILE_PATHS; do
-    cp "${PATH_NAME}/*" "${EXACT_PATH}"
+    cp "${PATH_NAME}"/* "${EXACT_PATH}"
   done
 
-  cp "${REFERENCE_LIBRARY_ASM}/*" "${ASM_PATH}"
-  cp "${REFERENCE_LIBRARY_ARCHIVE}/*" "${ARCHIVE_PATH}"
-  cp "${ARCHIVE_PATH}/*yaml" "${ASM_PATH}"
+  cp "${REFERENCE_LIBRARY_ASM}"/* "${ASM_PATH}"
+  cp "${REFERENCE_LIBRARY_ARCHIVE}"/* "${ARCHIVE_PATH}"
+  cp "${ARCHIVE_PATH}"/*yaml "${ASM_PATH}"
 else
   echo "Logic directory non-empty. Assuming file copy done previously"
   echo "Use --redo to force redoing previously done library prep/merge/massage/build steps"
@@ -174,16 +173,16 @@ MERGE_SCRIPT=${TENSILE_PATH}/Tensile/Utilities/merge.py
 MASSAGE_SCRIPT=${REFERENCE_LIBRARY_ARCHIVE}/massage.py
 
 # perform merge step
-if [ "${MERGE}" == true ]; then
+if ${MERGE}; then
   mkdir -p "${MERGE_PATH}"
   mkdir -p "${MASSAGE_PATH}"
 
-  if [ "${LIBRARY}" != arcturus ] && [ "${MASSAGE}" == true ]; then
+  if [ "${LIBRARY}" != arcturus ] && ${MASSAGE}; then
     ASM_PATH=${ARCHIVE_PATH}
   fi
 
   echo "Merging tuned logic with existing logic"
-  if [ "$(ls -A "${MERGE_PATH}")" ] || ${REDO}; then
+  if [ -z "$(ls -A "${MERGE_PATH}")" ] || ${REDO}; then
     python3 "${MERGE_SCRIPT}" "${ASM_PATH}" "${EXACT_PATH}" "${MERGE_PATH}" 2>&1 \
       | tee "${LOGS}/merge.log"
   else
@@ -196,9 +195,9 @@ else
 fi
 
 # perform massage step
-if [ "${MASSAGE}" == true ]; then
+if ${MASSAGE}; then
   echo "Massaging logic"
-  if [ "$(ls -A "${MASSAGE_PATH}")" ] || ${REDO}; then
+  if [ -z "$(ls -A "${MASSAGE_PATH}")" ] || ${REDO}; then
     python3 "${MASSAGE_SCRIPT}" "${MERGE_PATH}" "${MASSAGE_PATH}" 2>&1 \
       | tee "${LOGS}/massage.log"
   else

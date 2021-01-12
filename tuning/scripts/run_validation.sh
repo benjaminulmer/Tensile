@@ -51,8 +51,8 @@ TUNED_PATH=${WORKING_PATH}/benchmarks/tuned
 mkdir -p "${REFERENCE_PATH}"
 mkdir -p "${TUNED_PATH}"
 
-FILES=$(ls "${SCRIPT_ROOT}/*yaml")
-
+FILES=$(ls "${SCRIPT_ROOT}"/*yaml)
+echo ${FILES}
 echo "Benchmarking reference library"
 for FILE in $FILES
 do
@@ -64,5 +64,5 @@ echo "Benchmarking tuned library"
 for FILE in $FILES
 do
   NAME=$(basename "${FILE}" | cut -d'.' -f1)
-  "ROCBLAS_TENSILE_LIBPATH=${TENSILE_LIBRARY_PATH}" "${ROCBLAS_BENCH}" --yaml "${FILE}" > "${TUNED_PATH}/${NAME}.1"
+  ROCBLAS_TENSILE_LIBPATH="${TENSILE_LIBRARY_PATH}" "${ROCBLAS_BENCH}" --yaml "${FILE}" > "${TUNED_PATH}/${NAME}.1"
 done
