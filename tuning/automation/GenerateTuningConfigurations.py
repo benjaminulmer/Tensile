@@ -594,6 +594,14 @@ def OutputScript(problemMapper, scriptPath, namePart, disableStrides=False, prob
     outputFileName5 = GetOutputFileName(scriptPath, namePart, "yaml")
     outputFileName6 = GetOutputFileName(scriptPath, namePart+"-strided", "yaml")
 
+    # clear previous contents
+    open(outputFileName, 'w').close()
+    open(outputFileName2, 'w').close()
+    open(outputFileName3, 'w').close()
+    open(outputFileName4, 'w').close()
+    open(outputFileName5, 'w').close()
+    open(outputFileName6, 'w').close()
+
     scriptFileNames.append(outputFileName5)
     count = 0
     strided = False
