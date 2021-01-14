@@ -27,31 +27,31 @@ This is the master tuning script. It does the following:
 2) Runs Tensile for all 3 input yaml files
 3) Merges the tuning results (yaml file in 3_LibraryLogic directory) into the existing rocBLAS
 4) Runs massage script (adds ldc=ldd sizes) for vega10 and vega20 only
-5) Builds rocBLAS without tuned sizes (build_dir=reference_build)
-6) Builds rocBLAS with tuned sizes (build_dir=tuned_build)
-7) Runs rocblas-bench with untuned sizes and tuned sizes
-8) Runs analysis script, providing spreadsheets with performance before and after tuning
+5) Runs rocblas-bench with untuned sizes and tuned sizes
+6) Runs analysis script, providing spreadsheets with performance before and after tuning
 
 Usage: $0 WORKING_DIR LOG_PATH [options]
 
 Options:
 -h | --help             Display this help message
--l | --library          GPU used for tuning (arcturus, mi25, mi50, mi60, r7, v340 only)
 -n | --network          String to search for in filenames in log directory
 --tensile-path PATH     Path to existing Tensile (will not provision new copy)
---rocblas-path PATH      Path to existing rocBLAS (will not provision new copy)
+--rocblas-path PATH     Path to existing rocBLAS (will not provision new copy)
 -y | --data-type        Data type of sizes that you want to tune (sgemm, dgemm, hgemm only)
--t | --tile-aware       Use tile-aware method. (limited support, default=false)
--m | --mfma             Use MFMA kernels (default=false)
--r | --rk               Use replacement kernels (sgemm only, default=false)
--s | --disable-strides  Disable leading dimensions and strides in tuning file (default=false)
--i | --initialization   Initialize matrices when benchmarking (rand_int, trig_float, hpl, default=rand_int)
---problem-definition    Specify gemm, strided batched, or both sizes (gemm, batch, or both, default=both)
---client                Choose Tensile client version. (new, old, both, default=new)
+-t | --tile-aware       Use tile-aware method. (limited support)
+-m | --mfma             Use MFMA kernels
+-r | --rk               Use replacement kernels (sgemm only)
+-s | --disable-strides  Disable leading dimensions and strides in tuning file
 -f | --sclk             Frequency of sclk in MHz
--c | --count            Sets all cases where count=1 to count=10 (default=false)
+-c | --count            Sets all cases where count=1 to count=10
 -d | --dependencies     Install required dependencies (dependencies are not installed by default)
 --redo                  Force logic preparation, merge, massage, and library build steps to be redone
+
+-l | --library \\
+    {arcturus | vega20 | vega10 | mi25 | r9nano | hip}      GPU used for tuning (arcturus, mi25, mi50, mi60, r7, v340 only)
+--initialization {rand_int | trig_float | hpl} (=rand_int)  Data initialization for matrices
+--problem-definition {gemm | batch | both} (=both)          Which problem types to tune
+--client {new | old | both} (=new)                          Which Tensile runtime client to use
 "
 
 if ! OPTS=$(getopt -o h,l:,n:,y:,t,m,r,s,i:,f:,c,d \
