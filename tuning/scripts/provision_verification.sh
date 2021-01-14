@@ -34,7 +34,7 @@ Usage: ${0} WORKING_PATH TENSILE_PATH LIBRARY [options]
 
 Options:
 -h | --help                   Display this help message
--p | --rocblas-path PATH      Path to existing rocBLAS
+-p | --rocblas-path PATH      Path to existing rocBLAS (will not provision new copy)
 -f | --rocblas-fork USERNAME  rocBLAS fork to use
 -b | --branch BRANCH          rocBLAS branch to use
 -c | --commit COMMIT_ID       rocBLAS commit to use
