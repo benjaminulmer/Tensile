@@ -1,5 +1,5 @@
 ################################################################################
-# Copyright 2016-2020 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright 2016-2021 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ class ProblemDefinition :
 
 class HardwareProperties :
 
-    def __init__(self, dType, numCUs = 60, ldsSize = 65536, l2Eff = .7, \
+    def __init__(self, dType, numCUs = 120, ldsSize = 65536, l2Eff = .7, \
                 numChannels = 32, readBW = 64) :
 
         self.numCUs = numCUs
@@ -58,7 +58,7 @@ class HardwareProperties :
         self.l2BandwidthPerCU = (readBW * numChannels) // numCUs
 
 
-class Thresholds : 
+class Thresholds :
 
     def __init__(self, tile0Gran = 0.8, tile1Gran = 0.8, \
                  compMemBound = 1.0, gsuGran = 1.0, ldsMinUtilization = 0.7) :
@@ -72,11 +72,11 @@ class Thresholds :
 
 # Valid parameter options
 # TODO pull this from Common.py?
-macroTileSizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768]
+macroTileSizes = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 6, 12, 24, 48, 96, 192, 384, 768 ]
 macroTileSizes.sort()
 
 # TODO what's a good set of values for this?
-globalSplitUValues = [1, 2, 4, 8, 16, 24, 32, 64, 128, 256]
+globalSplitUValues = [1, 2, 3, 4, 5, 7, 8, 15, 16, 23, 24, 31, 32, 63, 64, 127, 128, 255, 256]
 
 # TODO what's a good set of values for this?
 depthUValues = [4, 8, 16, 32, 64, 128, 256]
@@ -99,8 +99,8 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
 
             if ldsLoad <= 1 and ldsLoad > thresholds.ldsMinUtilization :
                 toReturn.append({"mm0":mm0, "mm1":mm1, "gsu":gsu, "depthU":depthU})
-        
-        return toReturn 
+
+        return toReturn
 
     def checkGSU() :
         toReturn = []
@@ -140,7 +140,7 @@ def getGoodSolutionParameters(problem, hardware, thresholds) :
 
             if tile1Gran < thresholds.tile1Gran :
                 continue
-            
+
             toReturn += checkGSU()
 
     return toReturn
