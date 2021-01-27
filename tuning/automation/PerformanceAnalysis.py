@@ -146,7 +146,7 @@ def ProcessResults(outputPath, resultsName, freqM, sz, call_count, gpu = 'vega20
     timingResults = df[timingField].mean().to_frame()
 
     freq=freqM
-    factor=sz * 64 * multiplier * cus
+    factor= 256 * 60 #sz * 64 * multiplier * cus
     results['eff'] = 100*1e3*results['rocblas-Gflops'] / (factor * freq)
     results['us_w'] = timingResults['us']*call_count
 

@@ -158,14 +158,12 @@ fi
 
 # convert to efficiency
 if [ "${LIBRARY}" == arcturus ]; then
-  if [ "${PUBLIC}" == false ]; then
-    if [ ! -f "${LOGS}/log-efficiency" ]; then
-        pushd "${WORKING_PATH}"  > /dev/null || exit
-        git clone https://github.com/RocmSoftwarePlatform/rocmdevtools.git -b efficiency
-        python3 rocmdevtools/scripts/tuning/convertToEfficiency.py \
-          "${EXACT_PATH}" "${LIBRARY}" "${SCLK}" 2>&1 | tee "${LOGS}/efficiency.log"
-        popd > /dev/null || exit
-    fi
+  if [ ! -f "${LOGS}/log-efficiency" ]; then
+      pushd "${WORKING_PATH}"  > /dev/null || exit
+      git clone https://github.com/RocmSoftwarePlatform/rocmdevtools.git -b efficiency
+      python3 rocmdevtools/scripts/tuning/convertToEfficiency.py \
+        "${EXACT_PATH}" "${LIBRARY}" "${SCLK}" 2>&1 | tee "${LOGS}/efficiency.log"
+      popd > /dev/null || exit
   fi
 fi
 

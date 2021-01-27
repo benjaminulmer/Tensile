@@ -15,11 +15,11 @@ function make_tensile_tuning() {
   pushd "${WORKING_PATH}" > /dev/null || exit
   {
     echo "#!/bin/sh"
-    echo "if [ ! -d 3_LibraryLogic ] || [ -z \"\$(ls -A 3_LibraryLogic)\" ]; then"
-    echo "  touch time.begin"
-    echo "  ${TENSILE}/Tensile/bin/Tensile ${FILE_NAME} ./ > make.out 2>&1"
-    echo "  touch time.end"
-    echo "fi"
+    #echo "if [ ! -d 3_LibraryLogic ] || [ -z \"\$(ls -A 3_LibraryLogic)\" ]; then"
+    #echo "  touch time.begin"
+    echo "${TENSILE}/Tensile/bin/Tensile ${FILE_NAME} ./ > make.out 2>&1"
+    #echo "  touch time.end"
+    #echo "fi"
   } > doit.sh
 
   chmod +x doit.sh
