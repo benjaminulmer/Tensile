@@ -224,7 +224,11 @@ namespace Tensile
                 ("exit-on-failure",          po::value<bool>()->default_value(false), "Exit run early on failed kernels.")
                 ("selection-only",           po::value<bool>()->default_value(false), "Don't run any solutions, only print kernel selections.")
                 ("max-workspace-size",       po::value<size_t>()->default_value(32*1024*1024), "Max workspace for training")
+
+                ("run-criteria-verify",      po::value<bool>()->default_value(false), "Benchmark skipped solutions and verify they aren't winners")
                 ("granularity-threshold",    po::value<double>()->default_value(0.0), "Don't run a solution if total granularity is below")
+                ("mem-throughput-threshold", po::value<double>()->default_value(0.0), "Don't run a solution if mem throughput is below")
+                ("min-lds-utilization",      po::value<double>()->default_value(0.0), "Don't run a solution if LDS utilization is below")
                 ;
             // clang-format on
 
