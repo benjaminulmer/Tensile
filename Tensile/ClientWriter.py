@@ -699,6 +699,12 @@ def writeClientConfigIni(problemSizes, problemType, sourceDir, codeObjectFiles, 
         param("mem-throughput-threshold", globalParameters["MemThroughputThreshold"])
         param("min-lds-utilization",      globalParameters["MinLDSUtilization"])
 
+        mfmaKey = "mfma" if globalParameters["IsMFMA"] else "non_mfma"
+        typeKey = problemType.aType.toChar()
+
+        param("alu-rate",                 globalParameters["ALURates"][mfmaKey][typeKey])
+        param("l2-speed",                 globalParameters["L2Speed"])
+
 def writeClientConfig(forBenchmark, solutions, problemSizes, stepName, stepBaseDir, newLibrary, codeObjectFiles, tileAwareSelection, configBase = "ClientParameters", libraryFile = None):
 
     if tileAwareSelection:
