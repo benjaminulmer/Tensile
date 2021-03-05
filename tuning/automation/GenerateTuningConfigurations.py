@@ -326,6 +326,9 @@ def addGroup(problemGroup,dType,sizeKey,sizeList,gsuSizeList,gsuVals,tileAware,t
             scheme = generateDefaultScheme()
             scheme["GlobalSplitU"] = gsuVals if currList == gsuSizeList else [1]
             scheme["TransposeLDS"] = [0,1] if transposeType == "tn" else [0]
+            scheme["FractionalLoad"] = [0, 1]
+            scheme["InnerUnroll"] = [1, 2]
+            scheme["LocalDotLayout"] = [1, 2]
             if dType[0] == "h":
                 scheme["AssertSummationElementMultiple"] = [2]
                 scheme["AssertFree0ElementMultiple"] = [2]

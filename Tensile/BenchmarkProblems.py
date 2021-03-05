@@ -358,10 +358,17 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
     if not os.path.exists(resultsFileName) or \
         globalParameters["ForceRedoBenchmarkProblems"]:
 
+      currentTime = time.time()
+      elapsedTime = currentTime - startTime
+      print1("# Starting Tensile Client Benchmark - %.3fs\n" % (elapsedTime))
 
       libraryLogicPath = None
       forBenchmark = True
       returncode = runClient(libraryLogicPath, forBenchmark, enableTileSelection)
+
+      currentTime = time.time()
+      elapsedTime = currentTime - startTime
+      print1("# Finish Tensile Client Benchmark - %.3fs\n" % (elapsedTime))
 
       if returncode:
         benchmarkTestFails += 1
