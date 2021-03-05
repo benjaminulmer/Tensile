@@ -96,7 +96,7 @@ def getCuCount(gpu):
 
     return 64
 
-def fillCallCounts(problemMapper, callCounts, callCount, callCountStrided, isOne):
+def fillCallCounts(problemMapper, callCounts, callCount, callCountEx, callCountStrided, isOne):
 
     for i in problemMapper:
         for klist in i:
@@ -110,15 +110,20 @@ def fillCallCounts(problemMapper, callCounts, callCount, callCountStrided, isOne
                     callCounts.append(midList)
 
     for line in callCounts:
-        if line[0] == "gemm" or line[0] == "gemm_ex":
+        if line[0] == "gemm":
             callCount.append(line[3])
+        elif line[0] == "gemm_ex":
+            callCountEx.append(line[3])
         elif "gemm_strided_batched" in line[0]:
             callCountStrided.append(line[3])
 
-def chooseCallCount(resultsName, callCount, callCountStrided):
+def chooseCallCount(resultsName, callCount, callCountEx, callCountStrided):
     if "strided" in resultsName:
         return callCountStrided
-    return callCount
+    elif "ex" in resultsName:
+        return callCountEx
+    else:
+        return callCount
 
 def ProcessResults(outputPath, resultsName, freqM, sz, call_count, gpu = 'vega20', xdl = False):
 
@@ -146,7 +151,7 @@ def ProcessResults(outputPath, resultsName, freqM, sz, call_count, gpu = 'vega20
     timingResults = df[timingField].mean().to_frame()
 
     freq=freqM
-    factor=sz * 64 * multiplier * cus
+    factor= 256 * 120 #sz * 64 * multiplier * cus
     results['eff'] = 100*1e3*results['rocblas-Gflops'] / (factor * freq)
     results['us_w'] = timingResults['us']*call_count
 
@@ -212,9 +217,10 @@ def RunMain():
     problemMapper = list(ProcessFile(inputFileName).values())
     callCounts = list(list())
     callCount = list()
+    callCountEx = list()
     callCountStrided = list()
 
-    fillCallCounts(problemMapper, callCounts, callCount, callCountStrided, isOne)
+    fillCallCounts(problemMapper, callCounts, callCount, callCountEx, callCountStrided, isOne)
 
     resultsFiles = [f for f in os.listdir(inputPath) if (os.path.isfile(os.path.join(inputPath, f)))]
     resultsNameSet = set()
@@ -227,7 +233,7 @@ def RunMain():
 
     for resultsName in resultsNames:
         ParseResults(inputPath, outputPath, resultsName)
-        callCountChoice = chooseCallCount(resultsName, callCount, callCountStrided)
+        callCountChoice = chooseCallCount(resultsName, callCount, callCountEx, callCountStrided)
         ProcessResults(outputPath, resultsName, freqM, sz, callCountChoice, cu, xdl)
 
 
