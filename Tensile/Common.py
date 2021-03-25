@@ -255,7 +255,7 @@ globalParameters["RunCriteriaVerify"] = False
 globalParameters["GranularityThreshold"] = 0.0
 globalParameters["MemThroughputThreshold"] = 0.0
 globalParameters["MinLDSUtilization"] = 0.0
-globalParameters["HardwareSpecsPath"] = "hardware_specs.yaml"
+globalParameters["HardwareSpecsPath"] = None
 
 # Save a copy - since pytest doesn't re-run this initialization code and YAML files can override global settings - odd things can happen
 defaultGlobalParameters = deepcopy(globalParameters)
