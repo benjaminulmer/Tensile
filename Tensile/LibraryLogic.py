@@ -36,8 +36,8 @@ import time
 ################################################################################
 # Analyze Problem Type
 ################################################################################
-def analyzeProblemType( problemType, problemSizeGroups, inputParameters ):
-  print2(HR)
+def analyzeProblemType(problemType, problemSizeGroups, inputParameters):
+  print1(HR)
   print1("# Analyzing: %s" % problemType)
 
   enableTileSelection = problemType["TileAwareSelection"]
@@ -51,9 +51,7 @@ def analyzeProblemType( problemType, problemSizeGroups, inputParameters ):
     dataFileName = problemSizeGroup[1]
     dataFileNameList.append(dataFileName)
     solutionsFileName = problemSizeGroup[2]
-    #print "  problemSizes:", problemSizes
-    #print "# DataFileName:", dataFileName
-    #print "  solutionsFileName:", solutionsFileName
+
     if enableTileSelection:
       selectionFileName = problemSizeGroup[3]
       selectionFileNameList.append(selectionFileName)
@@ -87,17 +85,17 @@ def analyzeProblemType( problemType, problemSizeGroups, inputParameters ):
 
   ######################################
   # Remove invalid solutions
-  #logicAnalyzer.removeInvalidSolutions()
+  # TODO verify this can go
+  # logicAnalyzer.removeInvalidSolutions()
 
   ######################################
-  # Remove least important solutions
+  # Only keep winning solutions
   if globalParameters["SolutionSelectionAlg"] == 0:
-    logicAnalyzer.removeLeastImportantSolutions()
-  elif globalParameters["SolutionSelectionAlg"] == 1:
-    logicAnalyzer.keepWinnerSolutions()
+    printWarning("SolutionSelectionAlg=0 no longer supported; treating as 1")
   else:
-    printExit("Bad KeepLogic=%u"%globalParameters["KeepLogic"])
+    logicAnalyzer.keepWinnerSolutions()
 
+  # TODO determine if kill or update
   # # print raw data
   # if globalParameters["PrintLevel"] >= 2:
   #   line = "After Removals:\n"
@@ -115,6 +113,7 @@ def analyzeProblemType( problemType, problemSizeGroups, inputParameters ):
   #     line += "\n"
   #   print(line)
 
+  # TODO understand and update/document
   for i in range(0, len(logicAnalyzer.solutions)):
     s = logicAnalyzer.solutions[i]
     s["SolutionIndex"] = i
@@ -161,11 +160,8 @@ def analyzeProblemType( problemType, problemSizeGroups, inputParameters ):
     selectionSolutionsIdsList = list(selectionSolutionsIds)
 
   ######################################
+  # TODO determine if kill or update
   # Correct outliers
-  """
-  if inputParameters["SmoothOutliers"]:
-    logicAnalyzer.smoothOutliers()
-  """
   # numProblemSizes = logicAnalyzer.numProblemSizes
   # # print all 2D
   # numPermutations = 1
@@ -186,19 +182,6 @@ def analyzeProblemType( problemType, problemSizeGroups, inputParameters ):
   # #print permutations
   # for permutation in permutations:
   #   logicAnalyzer.print2D(permutation)
-
-  # ######################################
-  # # Range Logic
-  # rangeLogic = logicAnalyzer.enRule(0, logicAnalyzer.globalIndexRange)
-  # print2("# Final Range Logic:")
-  # print2(rangeLogic)
-  # logicComplexity = [0]*logicAnalyzer.numIndices
-  # logicAnalyzer.scoreLogicComplexity(rangeLogic, logicComplexity)
-  # print2("# Range Logic Complexity: %s" % logicComplexity)
-  # score = logicAnalyzer.scoreRangeForLogic( \
-  #    logicAnalyzer.globalIndexRange, rangeLogic)
-  # print1("\n# Score: %.0f ms" % (score/1000))
-  # logicAnalyzer.prepareLogic(rangeLogic) # convert indices to sizes, -1
 
   exactLogic = logicAnalyzer.exactWinners
   print1("# Exact Logic:")
@@ -555,27 +538,28 @@ class LogicAnalyzer:
   # is used by an exact problem or is the only possible solution for some
   # problem or doesn't improve the a solution by > SolutionImportanceMin%
   ##############################################################################
-  def removeLeastImportantSolutions(self):
-    # Remove least important solutions
-    start = time.time()
-    while len(self.solutions) > 1:
-      lisTuple = self.leastImportantSolution()
-      if lisTuple != None:
-        lisIdx = lisTuple[0]
-        lisPercSaved = lisTuple[1]
-        lisPercWins = lisTuple[2]
-        lisPercTime = lisTuple[3]
-        if lisPercSaved < self.parameters["SolutionImportanceMin"] or lisPercWins == 0:
-          print1("# Removing Unimportant Solution %u/%u: %s ( %f%% wins, %f%% ms time, %f%% ms saved" \
-              % (lisIdx, self.numSolutions, self.solutionNames[lisIdx], 100*lisPercWins, 100*lisPercTime, 100*lisPercSaved) )
-          self.removeSolution(lisIdx)
-          continue
-        else:
-          break
-      else: # no more lis, remainders are exact winner
-        break
-    stop = time.time()
-    print("removeLeastImportantSolutions elapsed time = %.1f secs" % (stop - start))
+  # TODO should be killable
+  # def removeLeastImportantSolutions(self):
+  #   # Remove least important solutions
+  #   start = time.time()
+  #   while len(self.solutions) > 1:
+  #     lisTuple = self.leastImportantSolution()
+  #     if lisTuple != None:
+  #       lisIdx = lisTuple[0]
+  #       lisPercSaved = lisTuple[1]
+  #       lisPercWins = lisTuple[2]
+  #       lisPercTime = lisTuple[3]
+  #       if lisPercSaved < self.parameters["SolutionImportanceMin"] or lisPercWins == 0:
+  #         print1("# Removing Unimportant Solution %u/%u: %s ( %f%% wins, %f%% ms time, %f%% ms saved" \
+  #             % (lisIdx, self.numSolutions, self.solutionNames[lisIdx], 100*lisPercWins, 100*lisPercTime, 100*lisPercSaved) )
+  #         self.removeSolution(lisIdx)
+  #         continue
+  #       else:
+  #         break
+  #     else: # no more lis, remainders are exact winner
+  #       break
+  #   stop = time.time()
+  #   print("removeLeastImportantSolutions elapsed time = %.1f secs" % (stop - start))
 
 
   ##############################################################################
@@ -587,6 +571,7 @@ class LogicAnalyzer:
     # solution indexes for the winners:
     winners = set()
 
+    # TODO should be killable
     # solutionImportance = []
     # for i in range(0, self.numSolutions):
     #   solutionImportance.append([i, 0, 0, 0, False])
@@ -1000,85 +985,86 @@ class LogicAnalyzer:
   ##############################################################################
   # Least Important Solution
   ##############################################################################
-  def leastImportantSolution(self):
-    solutionImportance = []
-    for i in range(0, self.numSolutions):
-      solutionImportance.append([i, 0, 0, 0, False])
-    problemSizes = [0]*self.numIndices
-    totalSavedMs = 0
-    totalExecMs = 0
-    totalWins = 0
-    for problemIndices in self.problemIndicesForGlobalRange:
-      for i in range(0, self.numIndices):
-        problemSizes[i] = self.problemIndexToSize[i][problemIndices[i]]
-      totalFlops = self.flopsPerMac
-      for size in problemSizes:
-        totalFlops *= size
+  # TODO can kill
+  # def leastImportantSolution(self):
+  #   solutionImportance = []
+  #   for i in range(0, self.numSolutions):
+  #     solutionImportance.append([i, 0, 0, 0, False])
+  #   problemSizes = [0]*self.numIndices
+  #   totalSavedMs = 0
+  #   totalExecMs = 0
+  #   totalWins = 0
+  #   for problemIndices in self.problemIndicesForGlobalRange:
+  #     for i in range(0, self.numIndices):
+  #       problemSizes[i] = self.problemIndexToSize[i][problemIndices[i]]
+  #     totalFlops = self.flopsPerMac
+  #     for size in problemSizes:
+  #       totalFlops *= size
 
-      problemSerial = self.indicesToSerial(0, problemIndices)
-      winnerIdx = -1
-      winnerGFlops = -1e6
-      secondGFlops = -1e9
-      for solutionIdx in range(0, self.numSolutions):
-        solutionSerialIdx = problemSerial + solutionIdx
-        solutionGFlops = self.data[solutionSerialIdx]
-        if solutionGFlops > winnerGFlops:
-          secondGFlops = winnerGFlops
-          winnerIdx = solutionIdx
-          winnerGFlops = solutionGFlops
-        elif solutionGFlops > secondGFlops:
-          secondGFlops = solutionGFlops
+  #     problemSerial = self.indicesToSerial(0, problemIndices)
+  #     winnerIdx = -1
+  #     winnerGFlops = -1e6
+  #     secondGFlops = -1e9
+  #     for solutionIdx in range(0, self.numSolutions):
+  #       solutionSerialIdx = problemSerial + solutionIdx
+  #       solutionGFlops = self.data[solutionSerialIdx]
+  #       if solutionGFlops > winnerGFlops:
+  #         secondGFlops = winnerGFlops
+  #         winnerIdx = solutionIdx
+  #         winnerGFlops = solutionGFlops
+  #       elif solutionGFlops > secondGFlops:
+  #         secondGFlops = solutionGFlops
 
-      winnerTimeMs = totalFlops / winnerGFlops / 1000000.0
-      secondTimeMs = totalFlops / secondGFlops / 1000000.0
-      if winnerGFlops > 0 and secondGFlops > 0:
-        solutionImportance[winnerIdx][1] += (secondTimeMs - winnerTimeMs)
-        totalSavedMs += secondTimeMs - winnerTimeMs
-      if winnerGFlops > 0:
-        solutionImportance[winnerIdx][2] += 1
-        solutionImportance[winnerIdx][3] += winnerTimeMs
-        totalExecMs += winnerTimeMs
-        totalWins += 1
-        if secondGFlops <= 0:
-          solutionImportance[winnerIdx][4] = True # this is only valid solution for this problem size, keep it
+  #     winnerTimeMs = totalFlops / winnerGFlops / 1000000.0
+  #     secondTimeMs = totalFlops / secondGFlops / 1000000.0
+  #     if winnerGFlops > 0 and secondGFlops > 0:
+  #       solutionImportance[winnerIdx][1] += (secondTimeMs - winnerTimeMs)
+  #       totalSavedMs += secondTimeMs - winnerTimeMs
+  #     if winnerGFlops > 0:
+  #       solutionImportance[winnerIdx][2] += 1
+  #       solutionImportance[winnerIdx][3] += winnerTimeMs
+  #       totalExecMs += winnerTimeMs
+  #       totalWins += 1
+  #       if secondGFlops <= 0:
+  #         solutionImportance[winnerIdx][4] = True # this is only valid solution for this problem size, keep it
 
 
-    # print data before sorting
-    for i in range(0, self.numSolutions):
-      print2("[%2u] %s: %e saved, %u wins, %u time, %s" \
-          % (solutionImportance[i][0], \
-          self.solutionNames[solutionImportance[i][0]], \
-          solutionImportance[i][1], \
-          solutionImportance[i][2], \
-          solutionImportance[i][3], \
-          "singular" if solutionImportance[i][4] else "" ) )
+  #   # print data before sorting
+  #   for i in range(0, self.numSolutions):
+  #     print2("[%2u] %s: %e saved, %u wins, %u time, %s" \
+  #         % (solutionImportance[i][0], \
+  #         self.solutionNames[solutionImportance[i][0]], \
+  #         solutionImportance[i][1], \
+  #         solutionImportance[i][2], \
+  #         solutionImportance[i][3], \
+  #         "singular" if solutionImportance[i][4] else "" ) )
 
-    totalSavedMs = max(1, totalSavedMs)
-    solutionImportance.sort(key=lambda x: x[1])
-    for i in range(0, self.numSolutions):
-      solutionIdx = solutionImportance[i][0]
-      canRemove = not solutionImportance[i][4] # don't remove if is only win for any size
-      for exactProblem in self.exactWinners:
-        winnerIdx = self.exactWinners[exactProblem][0]
-        if solutionIdx == winnerIdx: # exact winners are important
-          canRemove = False
-          break
-      if canRemove:
-        idx = solutionImportance[i][0]
-        if totalSavedMs > 0:
-          percSaved = 1.0 * solutionImportance[i][1] / totalSavedMs
-        else:
-          percSaved = 0
-        if totalWins > 0:
-          percWins = 1.0 * solutionImportance[i][2] / totalWins
-        else:
-          percWins = 0
-        if totalExecMs > 0:
-          percTime = 1.0 * solutionImportance[i][3] / totalExecMs
-        else:
-          percTime = 0
-        return ( idx, percSaved, percWins, percTime )
-    return None
+  #   totalSavedMs = max(1, totalSavedMs)
+  #   solutionImportance.sort(key=lambda x: x[1])
+  #   for i in range(0, self.numSolutions):
+  #     solutionIdx = solutionImportance[i][0]
+  #     canRemove = not solutionImportance[i][4] # don't remove if is only win for any size
+  #     for exactProblem in self.exactWinners:
+  #       winnerIdx = self.exactWinners[exactProblem][0]
+  #       if solutionIdx == winnerIdx: # exact winners are important
+  #         canRemove = False
+  #         break
+  #     if canRemove:
+  #       idx = solutionImportance[i][0]
+  #       if totalSavedMs > 0:
+  #         percSaved = 1.0 * solutionImportance[i][1] / totalSavedMs
+  #       else:
+  #         percSaved = 0
+  #       if totalWins > 0:
+  #         percWins = 1.0 * solutionImportance[i][2] / totalWins
+  #       else:
+  #         percWins = 0
+  #       if totalExecMs > 0:
+  #         percTime = 1.0 * solutionImportance[i][3] / totalExecMs
+  #       else:
+  #         percTime = 0
+  #       return ( idx, percSaved, percWins, percTime )
+  #   return None
 
 
   ##############################################################################
