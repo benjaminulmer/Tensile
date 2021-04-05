@@ -373,106 +373,100 @@ def writeSolutionsAndKernels(outputPath, CxxCompiler, problemTypes, solutions, k
   kernelFiles = []
   kernelSourceFile = None
   kernelHeaderFile = None
-
-  if not globalParameters["MergeFiles"]:
-    if globalParameters["LegacyComponents"]:
-      ensurePath(os.path.join(outputPath, "Solutions"))
-    ensurePath(os.path.join(outputPath, "Kernels"))
-
-  ##############################################################################
-  # Write Kernels
-  ##############################################################################
-  if globalParameters["MergeFiles"]:
-    kernelSourceFilename = os.path.join(outputPath, "Kernels.cpp")
-    kernelHeaderFilename = os.path.join(outputPath, "Kernels.h")
-
-    kernelFiles.append(kernelSourceFilename)
-    kernelSourceFile = open(kernelSourceFilename, "w")
-    kernelHeaderFile = open(kernelHeaderFilename, "w")
-    kernelSourceFile.write(CHeader)
-    kernelHeaderFile.write(CHeader)
-    kernelSourceFile.write("#include \"Kernels.h\"\n")
-    kernelHeaderFile.write("#pragma once\n")
-    if globalParameters["RuntimeLanguage"] == "HIP":
-      kernelHeaderFile.write("#include <hip/hip_runtime.h>\n")
-      kernelHeaderFile.write("#include <hip/hip_ext.h>\n\n")
-    kernelHeaderFile.write("#include \"KernelHeader.h\"\n\n")
-
   kernelsWithBuildErrs = {}
 
-  prepAsmOldClient()
-  prepAsmNewClient(kernelWriterAssembly)
-
-  kIter = zip(kernels, itertools.repeat(kernelWriterSource), itertools.repeat(kernelWriterAssembly))
-  results = Common.ParallelMap(processKernelSource, kIter, "Generating kernels", method=lambda x: x.starmap)
-
-  removeKernels = []
-  removeSolutions = []
-  removeResults = []
-  for kernIdx, res in Utils.tqdm(enumerate(results)):
-    (err,src,header,kernelName) = res
-    if(err == -2):
-      removeKernels.append(kernels[kernIdx])
-      removeSolutions.append(solutions[kernIdx])
-      removeResults.append(results[kernIdx])
-  for kern in removeKernels:
-      kernels.remove(kern)
-  for solut in removeSolutions:
-      solutions.remove(solut)
-  for rel in removeResults:
-      results.remove(rel)
-
-  kernelFiles += buildKernelSourceAndHeaderFiles(results, outputPath, kernelsWithBuildErrs, kernelSourceFile, kernelHeaderFile)
-
-  kernelsToBuild = list(kernels)
-  if errorTolerant:
-      def success(kernel):
-          writer = kernelWriterAssembly if kernel['KernelLanguage'] == 'Assembly' else kernelWriterSource
-          kernelName = writer.getKernelName(kernel)
-          return kernelName not in kernelsWithBuildErrs
-      kernelsToBuild = list(filter(success, kernelsToBuild))
-
-  if False:#len(kernelsWithBuildErrs) > 0:
-    print("\nKernel compilation failed in one or more subprocesses. May want to set CpuThreads=0 and re-run to make debug easier")
-    printExit("** kernel compilation failure **")
-
-  # handle helper kernel function
-  for ko in kernelHelperOjbs:
-    kernelName = ko.getKernelName()
-
-    # write kernel.cpp
+  if globalParameters["LegacyComponents"]:
     if not globalParameters["MergeFiles"]:
-      kernelSourceFilename = os.path.join(outputPath, "Kernels", kernelName+".cpp")
-      kernelSourceFile = open(kernelSourceFilename, "w")
-      kernelSourceFile.write(CHeader)
+      ensurePath(os.path.join(outputPath, "Solutions"))
+      ensurePath(os.path.join(outputPath, "Kernels"))
+
+    ##############################################################################
+    # Write Kernels
+    ##############################################################################
+    if globalParameters["MergeFiles"]:
+      kernelSourceFilename = os.path.join(outputPath, "Kernels.cpp")
+      kernelHeaderFilename = os.path.join(outputPath, "Kernels.h")
+
       kernelFiles.append(kernelSourceFilename)
-
-    (err, src) = ko.getSourceFileString()
-    kernelSourceFile.write(src)
-    if err:
-      print("*** warning: invalid kernel#%u"%kernelName)
-
-    if not globalParameters["MergeFiles"]:
-      kernelSourceFile.close()
-
-    # write kernel.h
-    if not globalParameters["MergeFiles"]:
-      kernelHeaderFile = open(os.path.join(outputPath, "Kernels", kernelName + ".h"), "w")
+      kernelSourceFile = open(kernelSourceFilename, "w")
+      kernelHeaderFile = open(kernelHeaderFilename, "w")
+      kernelSourceFile.write(CHeader)
       kernelHeaderFile.write(CHeader)
+      kernelSourceFile.write("#include \"Kernels.h\"\n")
+      kernelHeaderFile.write("#pragma once\n")
+      if globalParameters["RuntimeLanguage"] == "HIP":
+        kernelHeaderFile.write("#include <hip/hip_runtime.h>\n")
+        kernelHeaderFile.write("#include <hip/hip_ext.h>\n\n")
+      kernelHeaderFile.write("#include \"KernelHeader.h\"\n\n")
 
-    kernelHeaderFile.write( ko.getHeaderFileString())
+    prepAsmOldClient()
 
-    if not globalParameters["MergeFiles"]:
-      kernelHeaderFile.close()
+    kIter = zip(kernels, itertools.repeat(kernelWriterSource), itertools.repeat(kernelWriterAssembly))
+    results = Common.ParallelMap(processKernelSource, kIter, "Generating kernels", method=lambda x: x.starmap)
 
-  # close merged
-  if globalParameters["MergeFiles"]:
-    if kernelSourceFile:
-      kernelSourceFile.close()
-    if kernelHeaderFile:
-      kernelHeaderFile.close()
+    removeKernels = []
+    removeSolutions = []
+    removeResults = []
+    for kernIdx, res in Utils.tqdm(enumerate(results)):
+      (err,src,header,kernelName) = res
+      if(err == -2):
+        removeKernels.append(kernels[kernIdx])
+        removeSolutions.append(solutions[kernIdx])
+        removeResults.append(results[kernIdx])
+    for kern in removeKernels:
+        kernels.remove(kern)
+    for solut in removeSolutions:
+        solutions.remove(solut)
+    for rel in removeResults:
+        results.remove(rel)
 
+    kernelFiles += buildKernelSourceAndHeaderFiles(results, outputPath, kernelsWithBuildErrs, kernelSourceFile, kernelHeaderFile)
+
+    # handle helper kernel function
+    for ko in kernelHelperOjbs:
+      kernelName = ko.getKernelName()
+
+      # write kernel.cpp
+      if not globalParameters["MergeFiles"]:
+        kernelSourceFilename = os.path.join(outputPath, "Kernels", kernelName+".cpp")
+        kernelSourceFile = open(kernelSourceFilename, "w")
+        kernelSourceFile.write(CHeader)
+        kernelFiles.append(kernelSourceFilename)
+
+      (err, src) = ko.getSourceFileString()
+      kernelSourceFile.write(src)
+      if err:
+        print("*** warning: invalid kernel#%u"%kernelName)
+
+      if not globalParameters["MergeFiles"]:
+        kernelSourceFile.close()
+
+        # write kernel.h
+        kernelHeaderFile = open(os.path.join(outputPath, "Kernels", kernelName + ".h"), "w")
+        kernelHeaderFile.write(CHeader)
+
+      kernelHeaderFile.write( ko.getHeaderFileString())
+
+      if not globalParameters["MergeFiles"]:
+        kernelHeaderFile.close()
+
+    # close merged
+    if globalParameters["MergeFiles"]:
+      if kernelSourceFile:
+        kernelSourceFile.close()
+      if kernelHeaderFile:
+        kernelHeaderFile.close()
+
+  prepAsmNewClient(kernelWriterAssembly)
   if not globalParameters["GenerateSourcesAndExit"]:
+    kernelsToBuild = list(kernels)
+    if errorTolerant:
+        def success(kernel):
+            writer = kernelWriterAssembly if kernel['KernelLanguage'] == 'Assembly' else kernelWriterSource
+            kernelName = writer.getKernelName(kernel)
+            return kernelName not in kernelsWithBuildErrs
+        kernelsToBuild = list(filter(success, kernelsToBuild))
+
     codeObjectFiles += buildSourceCodeObjectFiles(CxxCompiler, kernelFiles, outputPath)
     codeObjectFiles += getAssemblyCodeObjectFiles(kernelsToBuild, kernelWriterAssembly, outputPath)
 
@@ -484,7 +478,6 @@ def writeSolutionsAndKernels(outputPath, CxxCompiler, problemTypes, solutions, k
     ##############################################################################
     # Write Solutions
     ##############################################################################
-
 
     solutionSourceFilename = os.path.join(outputPath, "Solutions.cpp")
     solutionHeaderFilename = os.path.join(outputPath, "Solutions.h")

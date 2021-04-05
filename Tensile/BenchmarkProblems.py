@@ -191,7 +191,7 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
     ensurePath(sourceDir)
 
     filesToCopy = []
-    if globalParameters["OldClientSourceTmp"]:
+    if globalParameters["OldClientSourceTmp"] and globalParameters["LegacyComponents"]:
       pushWorkingPath("sourceTmp")
       filesToCopy = [
           "SolutionMapper.h",
@@ -323,7 +323,7 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
       # remove from solution 2D list also
       solutions = list([s for s in solutions if len(s) > 0])
 
-    if globalParameters["OldClientSourceTmp"]:
+    if globalParameters["OldClientSourceTmp"] and globalParameters["LegacyComponents"]:
       print1("# Copying files that differ from sourceTmp -> source")
       sourceTmp = globalParameters["WorkingPath"]
       files = os.listdir(sourceTmp)
@@ -507,7 +507,7 @@ def getResults(resultsFileName, solutions, enableTileSelection, newResultsFileNa
 # Write Benchmark Files
 ################################################################################
 def writeBenchmarkFiles(stepBaseDir, solutions, problemSizes, stepName, filesToCopy, solutionSummationSizes):
-  if not globalParameters["MergeFiles"]:
+  if not globalParameters["MergeFiles"] and globalParameters["LegacyComponents"]:
     ensurePath(os.path.join(globalParameters["WorkingPath"], "Solutions"))
     ensurePath(os.path.join(globalParameters["WorkingPath"], "Kernels"))
 

@@ -183,7 +183,7 @@ globalParameters["PrintCodeCommands"] = False  # print the commands used to gene
 globalParameters["DumpTensors"] = False        # If True, dump tensors to binary files instead of printing them.
 
 # TODO - remove this when NewClient is mainstream
-globalParameters["OldClientSourceTmp"] = True      # Use an intermediate sourceTmp dir to detect file changes and minimize rebuilds on old client
+globalParameters["OldClientSourceTmp"] = False      # Use an intermediate sourceTmp dir to detect file changes and minimize rebuilds on old client
 
 # If PrintMax* is greater than the dimension, the middle elements will be repaced with "..."
 
@@ -238,7 +238,7 @@ globalParameters["EnableHalf"] = False
 globalParameters["ClientArgs"] = ""
 globalParameters["NewClientArgs"] = ""
 globalParameters["PackageLibrary"] = False
-globalParameters["LegacyComponents"] = True
+globalParameters["LegacyComponents"] = False
 
 # perf model
 globalParameters["PerfModelL2ReadHits"] = 0.0
