@@ -762,8 +762,9 @@ def ProcessFile(filename):
     problemMapper = {}
 
     with open(filename) as logFile:
-        for line in logFile:
+        for lineWS in logFile:
 
+            line = lineWS.strip()
             if "MIOpenDriver" in line:
                 args=line.split(' ')
                 parsedArgs, otherArgs = parser.parse_known_args(args)

@@ -191,7 +191,7 @@ def GetProblemType(key,tileAware,disableHpa):
 
     if (dType[0] == "h" or dType[0] == "b") and dType[2] == "s":
         if disableHpa:
-            # TODO this combo doens't work
+            # TODO this combo doesn't work
             print("input half and compute single requires hpa")
             pass
         initialParams["HighPrecisionAccumulate"] = True

@@ -151,9 +151,9 @@ def ProcessResults(outputPath, resultsName, freqM, sz, call_count, gpu = 'vega20
     timingResults = df[timingField].mean().to_frame()
 
     freq=freqM
-    factor= 256 * 120 #sz * 64 * multiplier * cus
+    factor= 1024 * 120 #sz * 64 * multiplier * cus
     results['eff'] = 100*1e3*results['rocblas-Gflops'] / (factor * freq)
-    results['us_w'] = timingResults['us']*call_count
+    results['us_w'] = timingResults['us']#*call_count
 
     aggregateFileName = resultsName + "-aggregated.csv"
     aggregateFilePath = os.path.join(outputPath, aggregateFileName)

@@ -139,16 +139,18 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
   for benchmarkStepIdx in range(0, totalBenchmarkSteps):
 
     benchmarkStep = benchmarkProcess[benchmarkStepIdx]
-    if winners.winners == {}:
-      # perf optimization to skip the initial winners creation
-      # this helps a little here but really helps below with avoiding the super-expensive
-      # removeHardcoded step below - that can use a fast-path to create
-      # winners when needed.
-      print1("# Empty winners - use fast initialization of hardcodedParameters")
-      resultingHardcodedParameterList = benchmarkStep.hardcodedParameters
-    else:
-      resultingHardcodedParameterList = \
-          winners.wpdUpdate( benchmarkStep.hardcodedParameters )
+    # if winners.winners == {}:
+    #   # perf optimization to skip the initial winners creation
+    #   # this helps a little here but really helps below with avoiding the super-expensive
+    #   # removeHardcoded step below - that can use a fast-path to create
+    #   # winners when needed.
+    #   print1("# Empty winners - use fast initialization of hardcodedParameters")
+    #       resultingHardcodedParameterList = benchmarkStep.hardcodedParameters
+    # else:
+    #   resultingHardcodedParameterList = \
+    #       winners.wpdUpdate( benchmarkStep.hardcodedParameters )
+
+    resultingHardcodedParameterList = benchmarkStep.hardcodedParameters
 
     benchmarkStep.hardcodedParameters = resultingHardcodedParameterList
     numHardcoded = len(benchmarkStep.hardcodedParameters)
@@ -169,17 +171,17 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
       printStr += " }"
       print1(printStr)
 
-    if False:
-      print1("# HardcodedParameters | WinningParameters:")
-      paramDictIdx = 0
-      hardcodedMinNaming = \
-          Solution.getMinNaming(benchmarkStep.hardcodedParameters)
-      for paramDict in benchmarkStep.hardcodedParameters:
-        winningParameters = winners[paramDict]
-        print1("#    (%u) %s | %s" % (paramDictIdx, \
-            Solution.getNameMin(paramDict, hardcodedMinNaming), \
-            Solution.getNameFull(winningParameters) ))
-        paramDictIdx += 1
+    # if False:
+    #   print1("# HardcodedParameters | WinningParameters:")
+    #   paramDictIdx = 0
+    #   hardcodedMinNaming = \
+    #       Solution.getMinNaming(benchmarkStep.hardcodedParameters)
+    #   for paramDict in benchmarkStep.hardcodedParameters:
+    #     winningParameters = winners[paramDict]
+    #     print1("#    (%u) %s | %s" % (paramDictIdx, \
+    #         Solution.getNameMin(paramDict, hardcodedMinNaming), \
+    #         Solution.getNameFull(winningParameters) ))
+    #     paramDictIdx += 1
     pushWorkingPath(shortName)
 
     ############################################################################
@@ -255,17 +257,18 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
     benchmarkStep.hardcodedParameters = validHardcoded
 
     if removesExist:
-      print1("# Updating winners since enumeration removed unused hardcoded solutions.  removeHardcoded=%u winners=%u" %(len(removeHardcoded), len(winners.winners)))
-      winners.wpdUpdate( benchmarkStep.hardcodedParameters )
-      if globalParameters["PrintLevel"] >= 1:
-        print1("")
+      #print1("# Updating winners since enumeration removed unused hardcoded solutions.  removeHardcoded=%u winners=%u" %(len(removeHardcoded), len(winners.winners)))
+      #winners.wpdUpdate( benchmarkStep.hardcodedParameters )
+      #if globalParameters["PrintLevel"] >= 1:
+      #  print1("")
       numHardcoded = len(benchmarkStep.hardcodedParameters )
       # remove from solution 2D list also
       solutions = list([s for s in solutions if len(s) > 0])
     elif winners.winners=={}:
-      print1("# Populating initial winners (%u solutions)\n" % len(benchmarkStep.hardcodedParameters))
+      #print1("# Populating initial winners (%u solutions)\n" % len(benchmarkStep.hardcodedParameters))
       for hcParm in benchmarkStep.hardcodedParameters:
         winners.winners[FrozenDictionary(hcParm)] = [{},-1]
+      pass
 
     print1("# Actual Solutions: %u / %u\n" % ( len(solutions), \
         maxPossibleSolutions ))
@@ -317,8 +320,8 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
       benchmarkStep.hardcodedParameters.remove(hardcodedParam)
 
     if removesExist:
-      print1("# Updating winners since kernelwriter removed unused hardcoded solutions.  removeHardcoded=%u winners=%u" %(len(removeHardcoded), len(winners.winners)))
-      winners.wpdUpdate( benchmarkStep.hardcodedParameters )
+      #print1("# Updating winners since kernelwriter removed unused hardcoded solutions.  removeHardcoded=%u winners=%u" %(len(removeHardcoded), len(winners.winners)))
+      #winners.wpdUpdate( benchmarkStep.hardcodedParameters )
       numHardcoded = len(benchmarkStep.hardcodedParameters )
       # remove from solution 2D list also
       solutions = list([s for s in solutions if len(s) > 0])
@@ -377,17 +380,17 @@ def benchmarkProblemType( problemTypeConfig, problemSizeGroupConfig, \
     ############################################################################
     # Winners -> Determined Parameters
     ############################################################################
-    if not enableTileSelection:
-        results = getResults(resultsFileName, solutions, enableTileSelection, newResultsFileName)
-        currentTime = time.time()
-        elapsedTime = currentTime - startTime
-        print1("# Finish GetResults - %.3fs\n" % (elapsedTime))
-        print2("CSV Results: %s" % results)
-        winners.addResults(benchmarkStep.hardcodedParameters, \
-            benchmarkPermutations, solutions, results)
-        currentTime = time.time()
-        elapsedTime = currentTime - startTime
-        print1("# Finish Adding Results - %.3fs\n" % (elapsedTime))
+    # if not enableTileSelection:
+    #     results = getResults(resultsFileName, solutions, enableTileSelection, newResultsFileName)
+    #     currentTime = time.time()
+    #     elapsedTime = currentTime - startTime
+    #     print1("# Finish GetResults - %.3fs\n" % (elapsedTime))
+    #     print2("CSV Results: %s" % results)
+    #     winners.addResults(benchmarkStep.hardcodedParameters, \
+    #         benchmarkPermutations, solutions, results)
+    #     currentTime = time.time()
+    #     elapsedTime = currentTime - startTime
+    #     print1("# Finish Adding Results - %.3fs\n" % (elapsedTime))
 
     ############################################################################
     # Write Solutions YAML

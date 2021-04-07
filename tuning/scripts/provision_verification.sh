@@ -255,12 +255,12 @@ CREATE_LIBRARY_ARGS=(--merge-files --no-legacy-components --no-short-file-names 
 # create new (tuned) Tensile library
 echo "Creating new Tensile library"
 if [ -f "${CREATE_LIBRARY_EXE}" ]; then
-    if [ ! -d "${TENSILE_LIBRARY_PATH}/library" ] || ${REDO}; then
+    #if [ ! -d "${TENSILE_LIBRARY_PATH}/library" ] || ${REDO}; then
         ${CREATE_LIBRARY_EXE} "${CREATE_LIBRARY_ARGS[@]}"
-    else
-      echo "Path already exists. Assuming library already built"
-      echo "Use --redo to force redoing previously done library prep/merge/massage/build steps"
-    fi
+    #else
+    #  echo "Path already exists. Assuming library already built"
+    #  echo "Use --redo to force redoing previously done library prep/merge/massage/build steps"
+    #fi
 else
   echo "Error: could not find TensileCreateLibrary script"
 fi
