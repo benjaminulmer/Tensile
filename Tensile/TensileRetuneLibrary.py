@@ -27,7 +27,7 @@ from . import LibraryLogic
 from . import Common
 from .Common import globalParameters, print1, printWarning, ensurePath, assignGlobalParameters, \
                     pushWorkingPath, popWorkingPath, restoreDefaultGlobalParameters, HR
-from .Tensile import addCommonArguments
+from .Tensile import addCommonArguments, argUpdatedGlobalParameters
 from .SolutionStructs import ProblemSizes
 from . import __version__
 
@@ -198,6 +198,11 @@ def TensileRetuneLibrary(userArgs):
     assignGlobalParameters({"LibraryFormat": "msgpack",
                             "OutputPath": outPath,
                             "WorkingPath": outPath})
+
+    overrideParameters = argUpdatedGlobalParameters(args)
+    for key, value in overrideParameters.items():
+        print("Overriding {0}={1}".format(key, value))
+        Common.globalParameters[key] = value
 
     # parse library logic then setup and run benchmarks
     (rawYaml, solutions, problemSizes) = parseCurrentLibrary(libPath, args.skipRK)
