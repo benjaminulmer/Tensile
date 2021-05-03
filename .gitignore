@@ -16,6 +16,10 @@ dist
 3_LibraryLogic
 4_LibraryClient
 
+# Test outputs
+HostLibraryTests/configs/SolutionLibraries/*.yaml
+HostLibraryTests/configs/SolutionLibraries/*.dat
+
 # Compiled Object files
 *.slo
 *.lo
@@ -60,4 +64,3 @@ tags
 
 # tox virtual environments
 .tox
-
