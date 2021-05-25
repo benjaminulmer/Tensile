@@ -214,7 +214,7 @@ globalParameters["LibraryUpdateFile"] = ""                        # File name fo
 globalParameters["LibraryUpdateComment"] = False                  # Include solution name as a comment in the library update file
 
 # internal, i.e., gets set during startup
-globalParameters["CurrentISA"] = (0,0,0)
+globalParameters["CurrentISA"] = (9,0,10)
 globalParameters["ROCmAgentEnumeratorPath"] = None      # /opt/rocm/bin/rocm_agent_enumerator
 globalParameters["ROCmSMIPath"] = None                  # /opt/rocm/bin/rocm-smi
 globalParameters["AssemblerPath"] = None                # /opt/rocm/hip/bin/hipcc
