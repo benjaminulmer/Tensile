@@ -54,7 +54,7 @@ globalParameters["PerformanceMetric"] = "DeviceEfficiency" # performance metric 
 globalParameters["PrintLevel"] = 1                # how much info to print in generator. 0=none, 1=standard, 2=verbose
 globalParameters["ClientLogLevel"] = 3            # the log level of client. 0=Error, 1=Terse, 2=Verbose, 3=Debug (Aligned with ResultReporter.hpp)
 # benchmarking
-globalParameters["KernelTime"] = False            # T=use device timers, F=use host timers
+globalParameters["KernelTime"] = True            # T=use device timers, F=use host timers
 globalParameters["PreciseKernelTime"] = True      # T=On hip, use the timestamps for kernel start and stop rather than separate events.  Can provide more accurate kernel timing.  For GlobalSplitU kernels, recommend disabling this to provide consistent
 # timing between GSU / non-GSU kernels
 globalParameters["CodeFromFiles"] = True          # if False byte arrays will be generated during Benchmarking phase as before
@@ -66,7 +66,7 @@ globalParameters["SyncsPerBenchmark"] = 1         # how iterations of the stream
 globalParameters["EnqueuesPerSync"] = 1           # how many solution enqueues to perform per synchronization
 globalParameters["SleepPercent"] = 300            # how long to sleep after every data point: 25 means 25% of solution time. Sleeping lets gpu cool down more.
 # validation
-globalParameters["NumElementsToValidate"] = 128   # number of elements to validate, 128 will be evenly spaced out (with prime number stride) across C tensor
+globalParameters["NumElementsToValidate"] = 0   # number of elements to validate, 128 will be evenly spaced out (with prime number stride) across C tensor
 globalParameters["BoundsCheck"] = 0   # Bounds check
 #1: Perform bounds check to find out of bounds reads/writes.  NumElementsToValidate must be -1.
 #2: Perform bounds check by front side guard page
@@ -150,7 +150,7 @@ globalParameters["DataInitTypeC"]  = 3            # 0=0, 1=1, 2=serial, 3=rand, 
 globalParameters["DataInitTypeD"]  = 0            # 0=0, 1=1, 2=serial, 3=rand, 4=Na, 5=serial-in-uN, 6=trig_float.
 globalParameters["DataInitTypeAlpha"] = 2         # 0=0, 1=1, 2=2, 3=rand, 4=NaN
 globalParameters["DataInitTypeBeta"] = 2          # 0=0, 1=1, 2=2, 3=rand, 4=NaN
-globalParameters["CEqualD"] = False               # Set to true if testing for the case where the pointer to C is the same as D.
+globalParameters["CEqualD"] = True               # Set to true if testing for the case where the pointer to C is the same as D.
 globalParameters["BufferOffsetA"] = 0             # data offset of buffer A
 globalParameters["BufferOffsetB"] = 0             # data offset of buffer B
 globalParameters["BufferOffsetC"] = 0             # data offset of buffer C
@@ -257,7 +257,7 @@ globalParameters["GranularityThreshold"] = 0.0
 # directory where custom kernels are located
 globalParameters["CustomKernelDirectory"] = os.path.join(os.path.dirname(os.path.realpath(__file__)), "CustomKernels")
 
-globalParameters["PristineOnGPU"] = True # use Pristine memory on Tensile trainning verification or not
+globalParameters["PristineOnGPU"] = False # use Pristine memory on Tensile trainning verification or not
 
 # Save a copy - since pytest doesn't re-run this initialization code and YAML files can override global settings - odd things can happen
 defaultGlobalParameters = deepcopy(globalParameters)
@@ -1732,7 +1732,7 @@ def detectGlobalCurrentISA():
   Returns returncode if detection failure
   """
   global globalParameters
-  
+
   if globalParameters["CurrentISA"] == (0,0,0) and globalParameters["ROCmAgentEnumeratorPath"]:
     process = subprocess.run([globalParameters["ROCmAgentEnumeratorPath"]], stdout=subprocess.PIPE)
     if os.name == "nt":
@@ -1757,7 +1757,7 @@ def detectGlobalCurrentISA():
       printWarning("%s exited with code %u" % (globalParameters["ROCmAgentEnumeratorPath"], process.returncode))
     return process.returncode
   return 0
-      
+
 def restoreDefaultGlobalParameters():
   """
   Restores `globalParameters` back to defaults.

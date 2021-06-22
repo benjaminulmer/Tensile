@@ -58,6 +58,7 @@ def parseCurrentLibrary(libPath, skipRK):
 
         sizes.append({"Exact": size})
 
+    solutions = [s for s in solutions if s["EnableMatrixInstruction"]]
     if skipRK:
         solutions = [s for s in solutions if not s["ReplacementKernel"]]
 
