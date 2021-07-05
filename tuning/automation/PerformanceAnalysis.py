@@ -146,9 +146,9 @@ def ProcessResults(outputPath, resultsName, freqM, sz, call_count, gpu = 'vega20
     timingResults = df[timingField].mean().to_frame()
 
     freq=freqM
-    factor=sz * 64 * multiplier * cus
+    factor=256 * 110  #sz * 64 * multiplier * cus
     results['eff'] = 100*1e3*results['rocblas-Gflops'] / (factor * freq)
-    results['us_w'] = timingResults['us']*call_count
+    results['us_w'] = timingResults['us'] #*call_count
 
     aggregateFileName = resultsName + "-aggregated.csv"
     aggregateFilePath = os.path.join(outputPath, aggregateFileName)
@@ -204,17 +204,17 @@ def RunMain():
     outputPath = args.output_path
     freqM = args.frequency
     sz = args.data_size
-    inputFileName = args.input_file_name
+    #inputFileName = args.input_file_name
     cu = args.gpu
     xdl = args.mfma
     isOne = args.is_count_1
 
-    problemMapper = list(ProcessFile(inputFileName).values())
+    #problemMapper = list(ProcessFile(inputFileName).values())
     callCounts = list(list())
     callCount = list()
     callCountStrided = list()
 
-    fillCallCounts(problemMapper, callCounts, callCount, callCountStrided, isOne)
+    #fillCallCounts(problemMapper, callCounts, callCount, callCountStrided, isOne)
 
     resultsFiles = [f for f in os.listdir(inputPath) if (os.path.isfile(os.path.join(inputPath, f)))]
     resultsNameSet = set()
@@ -227,8 +227,8 @@ def RunMain():
 
     for resultsName in resultsNames:
         ParseResults(inputPath, outputPath, resultsName)
-        callCountChoice = chooseCallCount(resultsName, callCount, callCountStrided)
-        ProcessResults(outputPath, resultsName, freqM, sz, callCountChoice, cu, xdl)
+        #callCountChoice = chooseCallCount(resultsName, callCount, callCountStrided)
+        ProcessResults(outputPath, resultsName, freqM, sz, [], cu, xdl)
 
 
 if __name__ == "__main__":
